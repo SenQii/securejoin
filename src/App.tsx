@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import googleLogo from '@/assets/google.png';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -14,14 +13,7 @@ import {
 } from '@/components/ui/card';
 import { AlertCircle, Lock, Unlock, Plus, Send } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import {
-  SignedIn,
-  SignInButton,
-  SignedOut,
-  UserButton,
-  SignIn,
-  useClerk,
-} from '@clerk/clerk-react';
+import { SignedIn, SignedOut, UserButton, useClerk } from '@clerk/clerk-react';
 // add reanimted? add some animations to the page
 
 function App() {
@@ -30,7 +22,7 @@ function App() {
   const [questions, setQuestions] = useState([{ question: '', answer: '' }]);
   const [secureJoinUrl, setSecureJoinUrl] = useState('');
   const [joinUrl, setJoinUrl] = useState('');
-  const [quizAnswers, setQuizAnswers] = useState([]);
+  const [quizAnswers, setQuizAnswers] = useState<string[]>([]);
   const { openSignIn } = useClerk();
 
   const handleAddQuestion = () => {
@@ -38,7 +30,7 @@ function App() {
   };
   const handleQuestionChange = (
     index: number,
-    field: string,
+    field: 'question' | 'answer',
     value: string
   ) => {
     const newQuestions = [...questions];
@@ -267,7 +259,9 @@ function App() {
                         id='quizAnswer'
                         placeholder='ادخل الجواب'
                         value={quizAnswers[0] || ''}
-                        onChange={(e) => setQuizAnswers([e.target.value])}
+                        onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                          setQuizAnswers([e.target.value])
+                        }
                         required
                       />
                     </div>
