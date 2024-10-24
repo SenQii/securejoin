@@ -74,7 +74,7 @@ function App() {
           console.log('could not get token', err);
         });
 
-      console.log('token:', tokenRef.current);
+      // console.log('token:', tokenRef.current);
     };
 
     if (user) get_Access_Token();
@@ -82,13 +82,15 @@ function App() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user]);
 
-  const handleCreateSecureJoin = (e: React.FormEvent<HTMLFormElement>) => {
+  const handleCreateSecureJoin = async (
+    e: React.FormEvent<HTMLFormElement>
+  ) => {
     e.preventDefault();
 
     // TODO: check its a social media link
     if (url_validator(groupUrl)) {
       try {
-        fetch(`${URL}/create_link`, {
+        const Res = await fetch(`${URL}/create_link`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -98,20 +100,18 @@ function App() {
             quiz_list: questions,
             original_url: currentGroupURL.current,
           }),
-        })
-          .then((response) => {
-            if (!response.ok) {
-              throw new Error(`Network response was not ok ${response.status}`);
-            }
-            return response.json();
-          })
-          .then((data) => {
-            // const Data = JSON.stringify(data);
-            onCreateLink(data);
-          })
-          .catch((error) => console.error('Error:', error));
+        });
+        if (!Res.ok) {
+          throw new Error(`Network response was not ok ${Res.status}`);
+        }
+        const data = await Res.json();
+        onCreateLink(data);
       } catch (err) {
         console.log('could not post to server', err);
+        toastERR('حدث خطأ أثناء إنشاء الرابط');
+        formReset();
+        setSecureJoinUrl('');
+        secureJoinUrlref.current = '';
       }
     } else {
       toastERR('لم ندعم هذا الرابط بعد، يرجى استخدام رابط منصة اجتماعية أخرى');
@@ -149,6 +149,8 @@ function App() {
       formReset();
     } else {
       toastERR('حدث خطأ أثناء إنشاء الرابط');
+      setSecureJoinUrl('');
+      secureJoinUrlref.current = '';
     }
   };
 
@@ -332,7 +334,7 @@ function App() {
                 </form>
               </CardContent>
               <CardFooter>
-                {secureJoinUrl && (
+                {secureJoinUrl.length > 0 && (
                   <Alert className='w-full px-12' dir='rtl'>
                     <AlertCircle className='h-4 w-4 right-4 translate-y-1/2' />
                     <AlertTitle> أُنشئ رابط الانضمام:</AlertTitle>
