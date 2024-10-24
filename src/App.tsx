@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -13,8 +13,24 @@ import {
 } from '@/components/ui/card';
 import { AlertCircle, Lock, Unlock, Plus, Send } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { SignedIn, SignedOut, UserButton, useClerk } from '@clerk/clerk-react';
+import {
+  SignedIn,
+  SignedOut,
+  UserButton,
+  useClerk,
+  useAuth,
+  useUser,
+} from '@clerk/clerk-react';
+import toast, { Toaster } from 'react-hot-toast';
+import { URL } from '@/lib/constant';
 // add reanimted? add some animations to the page
+
+// to constant file
+const avaliablePlatforms = ['chat.whatsapp.com', 't.me', 'ig.me'];
+
+const toastERR = (message: string) => {
+  toast.error(message);
+};
 
 function App() {
   const [activeTab, setActiveTab] = useState('join');
@@ -23,11 +39,19 @@ function App() {
   const [secureJoinUrl, setSecureJoinUrl] = useState('');
   const [joinUrl, setJoinUrl] = useState('');
   const [quizAnswers, setQuizAnswers] = useState<string[]>([]);
+
+  const tokenRef = useRef('');
+  const currentGroupURL = useRef('');
+  const secureJoinUrlref = useRef('');
+
   const { openSignIn } = useClerk();
+  const { getToken } = useAuth();
+  const { user } = useUser();
 
   const handleAddQuestion = () => {
     setQuestions([...questions, { question: '', answer: '' }]);
   };
+
   const handleQuestionChange = (
     index: number,
     field: 'question' | 'answer',
@@ -38,18 +62,101 @@ function App() {
     setQuestions(newQuestions);
   };
 
+  // run at sign in
+  useEffect(() => {
+    // get the AT
+    const get_Access_Token = async () => {
+      await getToken()
+        .then((token) => {
+          tokenRef.current = token || '';
+        })
+        .catch((err) => {
+          console.log('could not get token', err);
+        });
+
+      console.log('token:', tokenRef.current);
+    };
+
+    if (user) get_Access_Token();
+    else console.log('user not signed in');
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user]);
+
   const handleCreateSecureJoin = (e: React.FormEvent<HTMLFormElement>) => {
-    // TODO: check its a social media link
-    // instade:  post to server **
     e.preventDefault();
-    setSecureJoinUrl(
-      `https://securejoin.com/${Math.random().toString(36).substring(2, 11)}`
-    );
+
+    // TODO: check its a social media link
+    if (url_validator(groupUrl)) {
+      try {
+        fetch(`${URL}/create_link`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'access-token': tokenRef.current,
+          },
+          body: JSON.stringify({
+            quiz_list: questions,
+            original_url: currentGroupURL.current,
+          }),
+        })
+          .then((response) => {
+            if (!response.ok) {
+              throw new Error(`Network response was not ok ${response.status}`);
+            }
+            return response.json();
+          })
+          .then((data) => {
+            // const Data = JSON.stringify(data);
+            onCreateLink(data);
+          })
+          .catch((error) => console.error('Error:', error));
+      } catch (err) {
+        console.log('could not post to server', err);
+      }
+    } else {
+      toastERR('لم ندعم هذا الرابط بعد، يرجى استخدام رابط منصة اجتماعية أخرى');
+      document
+        .getElementById('groupUrl')
+        ?.style.setProperty('border-color', 'red');
+      document.getElementById('groupUrl')?.focus();
+    }
   };
 
   const handleJoinGroup = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     // SERVER: fetch Q, check answers & result
+  };
+
+  const url_validator = (url: string) => {
+    if (avaliablePlatforms.some((platform) => url.includes(platform))) {
+      return true;
+    } else {
+      return false;
+    }
+  };
+
+  const onCreateLink = (data: {
+    status: string;
+    message: string;
+    link?: string;
+  }) => {
+    console.log('data:', data);
+    if (data.status === 'success') {
+      // ref for real-time link, state to force re-render
+      secureJoinUrlref.current = data.link || '';
+      setSecureJoinUrl(secureJoinUrlref.current);
+      toast.success('تم إنشاء الرابط بنجاح');
+      formReset();
+    } else {
+      toastERR('حدث خطأ أثناء إنشاء الرابط');
+    }
+  };
+
+  const formReset = () => {
+    setGroupUrl('');
+    setQuestions([{ question: '', answer: '' }]);
+
+    document.getElementById('groupUrl')?.focus();
   };
 
   return (
@@ -142,18 +249,32 @@ function App() {
                 <form onSubmit={handleCreateSecureJoin}>
                   <div className='space-y-6'>
                     <div>
-                      {/* UX: add indecator to display platform's name / icon by reading the url */}
+                      {/* UX: add indicator to display platform's name / icon by reading the url */}
                       <Label htmlFor='groupUrl' className='text-lg'>
                         رابط المجموعة
                       </Label>
                       <Input
                         id='groupUrl'
-                        placeholder='الصق رايط المجموعة هنا'
+                        placeholder='الصق رابط المجموعة هنا'
                         value={groupUrl}
-                        onChange={(e) => setGroupUrl(e.target.value)}
+                        onChange={(e) => {
+                          const input = e.target.value;
+                          setGroupUrl(input);
+                          currentGroupURL.current = input;
+                        }}
                         required
                         className='mt-1'
+                        onClick={(e: React.MouseEvent<HTMLInputElement>) => {
+                          e.currentTarget.style.setProperty('border-color', '');
+                        }}
                       />
+                      {currentGroupURL.current && (
+                        <div className='mt-2 text-sm text-gray-600'>
+                          {url_validator(currentGroupURL.current)
+                            ? ''
+                            : 'رابط غير مدعوم، يرجى استخدام رابط منصة اجتماعية أخرى'}
+                        </div>
+                      )}
                     </div>
                     {questions.map((q, index) => (
                       <div key={index} className='space-y-3 p-4 rounded-lg'>
@@ -216,7 +337,7 @@ function App() {
                     <AlertCircle className='h-4 w-4 right-4 translate-y-1/2' />
                     <AlertTitle> أُنشئ رابط الانضمام:</AlertTitle>
                     <AlertDescription className='mt-2 font-mono text-sm break-all'>
-                      {secureJoinUrl}
+                      {secureJoinUrlref.current}
                     </AlertDescription>
                   </Alert>
                 )}
@@ -276,6 +397,7 @@ function App() {
           </TabsContent>
         </Tabs>
       </main>
+      <Toaster />
     </div>
   );
 }
