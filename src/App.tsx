@@ -45,6 +45,7 @@ function App() {
   const [joinUrl, setJoinUrl] = useState('');
   const [quizAnswers, setQuizAnswers] = useState<string[]>([]);
   const [quiz, setQuiz] = useState<QuizQuestion[]>([]);
+  const [JoinLink, setJoinLink] = useState('');
 
   const tokenRef = useRef('');
   const currentGroupURL = useRef('');
@@ -168,9 +169,41 @@ function App() {
     }
   }
 
-  const handleJoinGroup = (e: React.FormEvent<HTMLFormElement>) => {
+  const handleJoinGroup = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     // SERVER: fetch Q, check answers & result
+    try {
+      const response = await fetch(`${URL}/check_answer`, {
+        method: 'post',
+        headers: {
+          'Content-Type': 'application/json',
+          'access-token': tokenRef.current,
+        },
+        body: JSON.stringify({
+          answers: quizAnswers,
+          link: joinurlRef.current,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`Network response was not ok ${response.status}`);
+      }
+      const data = await response.json();
+
+      console.log('response:', data);
+
+      if (data.status === 'failed') {
+        toast.error('الإجابة خاطئة، حاول مرة أخرى');
+        return;
+      }
+
+      toast.success('اجابتك صحيحة، اضغط الرابط أسفل الصفحة للانضمام');
+      setJoinLink(data.direct_link);
+    } catch (error) {
+      console.error('Error:', error);
+      toastERR('حدث خطأ أثناء التحقق من الإجابات');
+      return;
+    }
   };
 
   const url_validator = (url: string) => {
@@ -468,6 +501,17 @@ function App() {
                   )}
                 </form>
               </CardContent>
+              <CardFooter>
+                {JoinLink.length > 0 && (
+                  <Alert className='w-full px-12' dir='rtl'>
+                    <AlertCircle className='h-4 w-4 right-4 translate-y-1/2' />
+                    <AlertTitle> انضم للمجموعة:</AlertTitle>
+                    <AlertDescription className='mt-2 font-mono text-sm break-all'>
+                      <a href={JoinLink}>{JoinLink}</a>
+                    </AlertDescription>
+                  </Alert>
+                )}
+              </CardFooter>
             </Card>
           </TabsContent>
         </Tabs>
