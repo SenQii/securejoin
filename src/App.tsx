@@ -32,6 +32,11 @@ const toastERR = (message: string) => {
   toast.error(message);
 };
 
+interface QuizQuestion {
+  question: string;
+  answer: string;
+}
+
 function App() {
   const [activeTab, setActiveTab] = useState('join');
   const [groupUrl, setGroupUrl] = useState('');
@@ -39,10 +44,12 @@ function App() {
   const [secureJoinUrl, setSecureJoinUrl] = useState('');
   const [joinUrl, setJoinUrl] = useState('');
   const [quizAnswers, setQuizAnswers] = useState<string[]>([]);
+  const [quiz, setQuiz] = useState<QuizQuestion[]>([]);
 
   const tokenRef = useRef('');
   const currentGroupURL = useRef('');
   const secureJoinUrlref = useRef('');
+  const joinurlRef = useRef('');
 
   const { openSignIn } = useClerk();
   const { getToken } = useAuth();
@@ -121,6 +128,45 @@ function App() {
       document.getElementById('groupUrl')?.focus();
     }
   };
+
+  async function check_link(link: string) {
+    try {
+      if (!link.includes('securejoin.com')) {
+        toastERR('الرابط المدخل غير صحيح');
+        document.getElementById('joinUrl')?.focus();
+        return;
+      }
+      const response = await fetch(`${URL}/get_quiz`, {
+        method: 'post',
+        headers: {
+          'Content-Type': 'application/json',
+          'access-token': tokenRef.current,
+        },
+        body: JSON.stringify({
+          link: link,
+        }),
+      });
+      if (!response.ok) {
+        if (response.status === 404) {
+          toastERR('لا يوجد رابط مطابق');
+          setSecureJoinUrl('');
+          secureJoinUrlref.current = '';
+          return;
+        }
+        throw new Error(`Network response was not ok ${response.status}`);
+      }
+
+      const data = await response.json();
+      console.log('data:', data.quiz);
+
+      setQuiz(data.quiz);
+    } catch (err) {
+      console.log('could not post to server', err);
+      toastERR('حدث خطأ أثناء التحقق من الرابط');
+      setSecureJoinUrl('');
+      secureJoinUrlref.current = '';
+    }
+  }
 
   const handleJoinGroup = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -353,9 +399,7 @@ function App() {
                 <CardDescription>
                   ادخل رابط الانضمام الآمن للانضمام للمجموعة
                 </CardDescription>
-                <CardDescription className='text-xs'>
-                  يبدأ الرابط بـ<code>https://securejoin.com</code>
-                </CardDescription>
+                <CardDescription className='text-xs'></CardDescription>
               </CardHeader>
               <CardContent>
                 <form onSubmit={handleJoinGroup}>
@@ -368,31 +412,60 @@ function App() {
                         id='joinUrl'
                         placeholder='الصق رابط الانضمام هنا'
                         value={joinUrl}
-                        onChange={(e) => setJoinUrl(e.target.value)}
+                        onChange={(e) => {
+                          setJoinUrl(e.target.value);
+                          joinurlRef.current = e.target.value;
+                        }}
                         required
                         className='mt-1'
                       />
+                      {joinurlRef.current && (
+                        <div className='mt-2 text-sm text-gray-600'>
+                          {joinurlRef.current.includes('https://securejoin.com')
+                            ? ''
+                            : 'رابط غير مدعوم، يجب أن بدأ الرابط بـ https://securejoin.com'}
+                        </div>
+                      )}
+                      <Button
+                        type='button'
+                        className='mt-6 md:w-1/2 w-full'
+                        onClick={() => check_link(joinurlRef.current)}
+                      >
+                        تحقق من الرابط
+                      </Button>
                     </div>
                     {/* In a real app, you would fetch questions based on the Secure Join URL */}
-                    <div className='p-4 bg-gray-100 rounded-lg flex flex-col gap-2'>
-                      <Label htmlFor='quizAnswer' className='text-lg'>
-                        ما ناتج 2 + 2؟
-                      </Label>
-                      <Input
-                        id='quizAnswer'
-                        placeholder='ادخل الجواب'
-                        value={quizAnswers[0] || ''}
-                        onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                          setQuizAnswers([e.target.value])
-                        }
-                        required
-                      />
-                    </div>
+                    {quiz.length > 0 &&
+                      quiz.map((q, index) => (
+                        <div
+                          key={index}
+                          className='p-4 bg-gray-100 rounded-lg flex flex-col gap-2'
+                        >
+                          <Label htmlFor='quizAnswer' className='text-lg'>
+                            {q.question}
+                          </Label>
+                          <Input
+                            id='quizAnswer'
+                            placeholder='ادخل الجواب'
+                            value={quizAnswers[index] || ''}
+                            onChange={(
+                              e: React.ChangeEvent<HTMLInputElement>
+                            ) => {
+                              const newAnswers = [...quizAnswers];
+                              newAnswers[index] = e.target.value;
+                              setQuizAnswers(newAnswers);
+                            }}
+                            required
+                          />
+                        </div>
+                      ))}
                   </div>
-                  <Button type='submit' className='mt-6 w-full'>
-                    انضم للمجموعة
-                    <Send className='w-4 h-4 mr-2' />
-                  </Button>
+                  {quiz.length > 0 && (
+                    <Button type='submit' className='mt-6 w-full'>
+                      انضم للمجموعة
+                      <Send className='w-4 h-4 mr-2' />
+                    </Button>
+                  )}
                 </form>
               </CardContent>
             </Card>
