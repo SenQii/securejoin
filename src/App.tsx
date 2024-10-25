@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -13,8 +13,29 @@ import {
 } from '@/components/ui/card';
 import { AlertCircle, Lock, Unlock, Plus, Send } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { SignedIn, SignedOut, UserButton, useClerk } from '@clerk/clerk-react';
+import {
+  SignedIn,
+  SignedOut,
+  UserButton,
+  useClerk,
+  useAuth,
+  useUser,
+} from '@clerk/clerk-react';
+import toast, { Toaster } from 'react-hot-toast';
+import { URL } from '@/lib/constant';
 // add reanimted? add some animations to the page
+
+// to constant file
+const avaliablePlatforms = ['chat.whatsapp.com', 't.me', 'ig.me'];
+
+const toastERR = (message: string) => {
+  toast.error(message);
+};
+
+interface QuizQuestion {
+  question: string;
+  answer: string;
+}
 
 function App() {
   const [activeTab, setActiveTab] = useState('join');
@@ -23,11 +44,22 @@ function App() {
   const [secureJoinUrl, setSecureJoinUrl] = useState('');
   const [joinUrl, setJoinUrl] = useState('');
   const [quizAnswers, setQuizAnswers] = useState<string[]>([]);
+  const [quiz, setQuiz] = useState<QuizQuestion[]>([]);
+  const [JoinLink, setJoinLink] = useState('');
+
+  const tokenRef = useRef('');
+  const currentGroupURL = useRef('');
+  const secureJoinUrlref = useRef('');
+  const joinurlRef = useRef('');
+
   const { openSignIn } = useClerk();
+  const { getToken } = useAuth();
+  const { user } = useUser();
 
   const handleAddQuestion = () => {
     setQuestions([...questions, { question: '', answer: '' }]);
   };
+
   const handleQuestionChange = (
     index: number,
     field: 'question' | 'answer',
@@ -38,18 +70,174 @@ function App() {
     setQuestions(newQuestions);
   };
 
-  const handleCreateSecureJoin = (e: React.FormEvent<HTMLFormElement>) => {
-    // TODO: check its a social media link
-    // instade:  post to server **
+  // run at sign in
+  useEffect(() => {
+    // get the AT
+    const get_Access_Token = async () => {
+      await getToken()
+        .then((token) => {
+          tokenRef.current = token || '';
+        })
+        .catch((err) => {
+          console.log('could not get token', err);
+        });
+
+      // console.log('token:', tokenRef.current);
+    };
+
+    if (user) get_Access_Token();
+    else console.log('user not signed in');
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user]);
+
+  const handleCreateSecureJoin = async (
+    e: React.FormEvent<HTMLFormElement>
+  ) => {
     e.preventDefault();
-    setSecureJoinUrl(
-      `https://securejoin.com/${Math.random().toString(36).substring(2, 11)}`
-    );
+
+    // TODO: check its a social media link
+    if (url_validator(groupUrl)) {
+      try {
+        const Res = await fetch(`${URL}/create_link`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'access-token': tokenRef.current,
+          },
+          body: JSON.stringify({
+            quiz_list: questions,
+            original_url: currentGroupURL.current,
+          }),
+        });
+        if (!Res.ok) {
+          throw new Error(`Network response was not ok ${Res.status}`);
+        }
+        const data = await Res.json();
+        onCreateLink(data);
+      } catch (err) {
+        console.log('could not post to server', err);
+        toastERR('حدث خطأ أثناء إنشاء الرابط');
+        formReset();
+        setSecureJoinUrl('');
+        secureJoinUrlref.current = '';
+      }
+    } else {
+      toastERR('لم ندعم هذا الرابط بعد، يرجى استخدام رابط منصة اجتماعية أخرى');
+      document
+        .getElementById('groupUrl')
+        ?.style.setProperty('border-color', 'red');
+      document.getElementById('groupUrl')?.focus();
+    }
   };
 
-  const handleJoinGroup = (e: React.FormEvent<HTMLFormElement>) => {
+  async function check_link(link: string) {
+    try {
+      if (!link.includes('securejoin.com')) {
+        toastERR('الرابط المدخل غير صحيح');
+        document.getElementById('joinUrl')?.focus();
+        return;
+      }
+      const response = await fetch(`${URL}/get_quiz`, {
+        method: 'post',
+        headers: {
+          'Content-Type': 'application/json',
+          'access-token': tokenRef.current,
+        },
+        body: JSON.stringify({
+          link: link,
+        }),
+      });
+      if (!response.ok) {
+        if (response.status === 404) {
+          toastERR('لا يوجد رابط مطابق');
+          setSecureJoinUrl('');
+          secureJoinUrlref.current = '';
+          return;
+        }
+        throw new Error(`Network response was not ok ${response.status}`);
+      }
+
+      const data = await response.json();
+      console.log('data:', data.quiz);
+
+      setQuiz(data.quiz);
+    } catch (err) {
+      console.log('could not post to server', err);
+      toastERR('حدث خطأ أثناء التحقق من الرابط');
+      setSecureJoinUrl('');
+      secureJoinUrlref.current = '';
+    }
+  }
+
+  const handleJoinGroup = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     // SERVER: fetch Q, check answers & result
+    try {
+      const response = await fetch(`${URL}/check_answer`, {
+        method: 'post',
+        headers: {
+          'Content-Type': 'application/json',
+          'access-token': tokenRef.current,
+        },
+        body: JSON.stringify({
+          answers: quizAnswers,
+          link: joinurlRef.current,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`Network response was not ok ${response.status}`);
+      }
+      const data = await response.json();
+
+      console.log('response:', data);
+
+      if (data.status === 'failed') {
+        toast.error('الإجابة خاطئة، حاول مرة أخرى');
+        return;
+      }
+
+      toast.success('اجابتك صحيحة، اضغط الرابط أسفل الصفحة للانضمام');
+      setJoinLink(data.direct_link);
+    } catch (error) {
+      console.error('Error:', error);
+      toastERR('حدث خطأ أثناء التحقق من الإجابات');
+      return;
+    }
+  };
+
+  const url_validator = (url: string) => {
+    if (avaliablePlatforms.some((platform) => url.includes(platform))) {
+      return true;
+    } else {
+      return false;
+    }
+  };
+
+  const onCreateLink = (data: {
+    status: string;
+    message: string;
+    link?: string;
+  }) => {
+    console.log('data:', data);
+    if (data.status === 'success') {
+      // ref for real-time link, state to force re-render
+      secureJoinUrlref.current = data.link || '';
+      setSecureJoinUrl(secureJoinUrlref.current);
+      toast.success('تم إنشاء الرابط بنجاح');
+      formReset();
+    } else {
+      toastERR('حدث خطأ أثناء إنشاء الرابط');
+      setSecureJoinUrl('');
+      secureJoinUrlref.current = '';
+    }
+  };
+
+  const formReset = () => {
+    setGroupUrl('');
+    setQuestions([{ question: '', answer: '' }]);
+
+    document.getElementById('groupUrl')?.focus();
   };
 
   return (
@@ -142,18 +330,32 @@ function App() {
                 <form onSubmit={handleCreateSecureJoin}>
                   <div className='space-y-6'>
                     <div>
-                      {/* UX: add indecator to display platform's name / icon by reading the url */}
+                      {/* UX: add indicator to display platform's name / icon by reading the url */}
                       <Label htmlFor='groupUrl' className='text-lg'>
                         رابط المجموعة
                       </Label>
                       <Input
                         id='groupUrl'
-                        placeholder='الصق رايط المجموعة هنا'
+                        placeholder='الصق رابط المجموعة هنا'
                         value={groupUrl}
-                        onChange={(e) => setGroupUrl(e.target.value)}
+                        onChange={(e) => {
+                          const input = e.target.value;
+                          setGroupUrl(input);
+                          currentGroupURL.current = input;
+                        }}
                         required
                         className='mt-1'
+                        onClick={(e: React.MouseEvent<HTMLInputElement>) => {
+                          e.currentTarget.style.setProperty('border-color', '');
+                        }}
                       />
+                      {currentGroupURL.current && (
+                        <div className='mt-2 text-sm text-gray-600'>
+                          {url_validator(currentGroupURL.current)
+                            ? ''
+                            : 'رابط غير مدعوم، يرجى استخدام رابط منصة اجتماعية أخرى'}
+                        </div>
+                      )}
                     </div>
                     {questions.map((q, index) => (
                       <div key={index} className='space-y-3 p-4 rounded-lg'>
@@ -211,12 +413,12 @@ function App() {
                 </form>
               </CardContent>
               <CardFooter>
-                {secureJoinUrl && (
+                {secureJoinUrl.length > 0 && (
                   <Alert className='w-full px-12' dir='rtl'>
                     <AlertCircle className='h-4 w-4 right-4 translate-y-1/2' />
                     <AlertTitle> أُنشئ رابط الانضمام:</AlertTitle>
                     <AlertDescription className='mt-2 font-mono text-sm break-all'>
-                      {secureJoinUrl}
+                      {secureJoinUrlref.current}
                     </AlertDescription>
                   </Alert>
                 )}
@@ -230,9 +432,7 @@ function App() {
                 <CardDescription>
                   ادخل رابط الانضمام الآمن للانضمام للمجموعة
                 </CardDescription>
-                <CardDescription className='text-xs'>
-                  يبدأ الرابط بـ<code>https://securejoin.com</code>
-                </CardDescription>
+                <CardDescription className='text-xs'></CardDescription>
               </CardHeader>
               <CardContent>
                 <form onSubmit={handleJoinGroup}>
@@ -245,37 +445,78 @@ function App() {
                         id='joinUrl'
                         placeholder='الصق رابط الانضمام هنا'
                         value={joinUrl}
-                        onChange={(e) => setJoinUrl(e.target.value)}
+                        onChange={(e) => {
+                          setJoinUrl(e.target.value);
+                          joinurlRef.current = e.target.value;
+                        }}
                         required
                         className='mt-1'
                       />
+                      {joinurlRef.current && (
+                        <div className='mt-2 text-sm text-gray-600'>
+                          {joinurlRef.current.includes('https://securejoin.com')
+                            ? ''
+                            : 'رابط غير مدعوم، يجب أن بدأ الرابط بـ https://securejoin.com'}
+                        </div>
+                      )}
+                      <Button
+                        type='button'
+                        className='mt-6 md:w-1/2 w-full'
+                        onClick={() => check_link(joinurlRef.current)}
+                      >
+                        تحقق من الرابط
+                      </Button>
                     </div>
                     {/* In a real app, you would fetch questions based on the Secure Join URL */}
-                    <div className='p-4 bg-gray-100 rounded-lg flex flex-col gap-2'>
-                      <Label htmlFor='quizAnswer' className='text-lg'>
-                        ما ناتج 2 + 2؟
-                      </Label>
-                      <Input
-                        id='quizAnswer'
-                        placeholder='ادخل الجواب'
-                        value={quizAnswers[0] || ''}
-                        onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                          setQuizAnswers([e.target.value])
-                        }
-                        required
-                      />
-                    </div>
+                    {quiz.length > 0 &&
+                      quiz.map((q, index) => (
+                        <div
+                          key={index}
+                          className='p-4 bg-gray-100 rounded-lg flex flex-col gap-2'
+                        >
+                          <Label htmlFor='quizAnswer' className='text-lg'>
+                            {q.question}
+                          </Label>
+                          <Input
+                            id='quizAnswer'
+                            placeholder='ادخل الجواب'
+                            value={quizAnswers[index] || ''}
+                            onChange={(
+                              e: React.ChangeEvent<HTMLInputElement>
+                            ) => {
+                              const newAnswers = [...quizAnswers];
+                              newAnswers[index] = e.target.value;
+                              setQuizAnswers(newAnswers);
+                            }}
+                            required
+                          />
+                        </div>
+                      ))}
                   </div>
-                  <Button type='submit' className='mt-6 w-full'>
-                    انضم للمجموعة
-                    <Send className='w-4 h-4 mr-2' />
-                  </Button>
+                  {quiz.length > 0 && (
+                    <Button type='submit' className='mt-6 w-full'>
+                      انضم للمجموعة
+                      <Send className='w-4 h-4 mr-2' />
+                    </Button>
+                  )}
                 </form>
               </CardContent>
+              <CardFooter>
+                {JoinLink.length > 0 && (
+                  <Alert className='w-full px-12' dir='rtl'>
+                    <AlertCircle className='h-4 w-4 right-4 translate-y-1/2' />
+                    <AlertTitle> انضم للمجموعة:</AlertTitle>
+                    <AlertDescription className='mt-2 font-mono text-sm break-all'>
+                      <a href={JoinLink}>{JoinLink}</a>
+                    </AlertDescription>
+                  </Alert>
+                )}
+              </CardFooter>
             </Card>
           </TabsContent>
         </Tabs>
       </main>
+      <Toaster />
     </div>
   );
 }
