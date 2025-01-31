@@ -11,7 +11,7 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
-import { AlertCircle, Lock, Unlock, Plus, Send } from 'lucide-react';
+import { AlertCircle, Plus, Send } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { SignedIn } from '@clerk/clerk-react';
 import { QuizQuestion } from '@/lib/types';
@@ -77,24 +77,25 @@ export default function Modal({
   };
 
   return (
-    <main className='min-h-screen px-5 z-50' dir='rtl'>
+    <main className='min-h-screen w-full px-5 z-40' dir='rtl'>
       <Tabs
         value={activeTab}
         onValueChange={setActiveTab}
         className='w-full max-w-4xl mx-auto backdrop-blur-sm bg-card rounded-xl overflow-hidden'
       >
+        {/* tabs */}
         <SignedIn>
-          <TabsList className='grid w-full grid-cols-2 mb-8'>
-            <TabsTrigger value='create' className='text-lg py-3'>
-              <Lock className='w-5 h-5 mr-2' />
-              انشئ رابط
+          <TabsList className='grid w-full grid-cols-2 mt-2 mb-2'>
+            <TabsTrigger value='create' className='text-sm md:text-lg'>
+              انشئ رابط انضمام
             </TabsTrigger>
-            <TabsTrigger value='join' className='text-lg py-3'>
-              <Unlock className='w-5 h-5 mr-2' />
-              انضم لمجموعة عبر الرابط
+            <TabsTrigger value='join' className='text-sm md:text-lg'>
+              انضم عبر رابط آمن
             </TabsTrigger>
           </TabsList>
         </SignedIn>
+
+        {/* create secureLink */}
         <TabsContent value='create'>
           <Card dir='rtl'>
             <CardHeader>
@@ -194,6 +195,8 @@ export default function Modal({
             </CardFooter>
           </Card>
         </TabsContent>
+
+        {/* join group via secureLink */}
         <TabsContent value='join'>
           <Card dir='rtl'>
             <CardHeader>
