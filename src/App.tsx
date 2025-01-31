@@ -5,6 +5,7 @@ import { Toaster } from 'react-hot-toast';
 import Header from '@/components/ui/header';
 import { ParallaxLogo } from './components/ui/ParallaxLogo';
 import Modal from './components/modal';
+import Hero from './components/hero';
 // add reanimted? add some animations to the page
 
 function App() {
@@ -34,9 +35,10 @@ function App() {
   }, [user]);
 
   return (
-    <div className='min-h-screen flex flex-col bg-background gap-8'>
+    <div className='min-h-screen flex flex-col items-center bg-background gap-10'>
       <Header />
 
+      <Hero />
       <Modal tokenRef={tokenRef} />
 
       <ParallaxLogo />
