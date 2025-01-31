@@ -244,9 +244,9 @@ export default function Modal({
                     quiz.map((q, index) => (
                       <div
                         key={index}
-                        className='p-4 bg-gray-100 rounded-lg flex flex-col gap-2'
+                        className='p-4 rounded-lg flex flex-col gap-2'
                       >
-                        <Label htmlFor='quizAnswer' className='text-lg'>
+                        <Label htmlFor='quizAnswer' className='text-lg font-bold'>
                           {q.question}
                         </Label>
                         <Input
@@ -276,10 +276,10 @@ export default function Modal({
             </CardContent>
             <CardFooter>
               {joinLink.length > 0 && (
-                <Alert className='w-full px-12' dir='rtl'>
-                  <AlertCircle className='h-4 w-4 right-4 translate-y-1/2' />
+                <Alert className='w-full px-12 text-white'>
+                  <AlertCircle className='h-6 w-6 right-4 translate-y-1/2' color='white' />
                   <AlertTitle> انضم للمجموعة:</AlertTitle>
-                  <AlertDescription className='mt-2 font-mono text-sm break-all'>
+                  <AlertDescription className='mt-4 font-mono text-sm break-all'>
                     <a href={joinLink}>{joinLink}</a>
                   </AlertDescription>
                 </Alert>
