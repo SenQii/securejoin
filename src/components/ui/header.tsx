@@ -29,7 +29,7 @@ function Header() {
           className='flex flex-col items-center cursor-pointer gap-1 '
           onClick={() => openSignIn()}
         >
-          <img src='/src/assets/signin.svg' width={32} height={32} />
+          <img src='/images/signin.svg' width={32} height={32} />
           <span className='text-white text-sm text-center'>سجل الدخول</span>
         </div>
       </SignedOut>

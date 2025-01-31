@@ -12,7 +12,7 @@ function Hero() {
                 SecureJoin
               </h1>
               <img
-                src='src/assets/wave_blue.svg'
+                src='/images/wave_blue.svg'
                 alt='blue wave'
                 className='absolute -bottom-2 left-0 w-full scale-125 md:scale-100 -z-30'
               />
@@ -25,7 +25,7 @@ function Hero() {
         <Card className='rounded-xl aspect-square w-full max-w-64 items-center justify-center flex backdrop-blur-sm bg-white bg-opacity-20'>
           <CardContent className=' p-0'>
             <img
-              src='src/assets/security.svg'
+              src='/images/security.svg'
               alt='signin'
               className='w-full h-full'
             />
