@@ -23,7 +23,7 @@ function Hero() {
           </CardContent>
         </Card>
         <Card className='rounded-xl aspect-square w-full max-w-64 items-center justify-center flex backdrop-blur-sm bg-white bg-opacity-20'>
-          <CardContent className=' p-0'>
+          <CardContent className='p-0 w-full h-full'>
             <img
               src='/images/security.svg'
               alt='signin'
