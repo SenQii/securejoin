@@ -11,13 +11,15 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
-import { AlertCircle, Plus, Send } from 'lucide-react';
+import { AlertCircle, Send, MessageSquare, ShieldCheck } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { SignedIn } from '@clerk/clerk-react';
-import { QuizQuestion } from '@/lib/types';
+import { OTPMethod, QuizQuestion, VerificationMethod } from '@/lib/types';
 import useSecureLink from '@/hooks/useSecureLink';
 import { useQuiz } from '@/hooks/useQuiz';
-import { validateUrl } from '@/lib/utils';
+import { cn, validateUrl } from '@/lib/utils';
+import { OTPSection } from '@/features/otp-section';
+import { QuestionsSection } from '@/features/questions-section';
 
 export default function Modal({
   tokenRef,
@@ -26,8 +28,14 @@ export default function Modal({
 }) {
   const [activeTab, setActiveTab] = useState('join');
   const [groupUrl, setGroupUrl] = useState('');
-  const [questions, setQuestions] = useState<QuizQuestion[]>([]);
+  const [questions, setQuestions] = useState<QuizQuestion[]>([
+    { question: '', answer: '' },
+  ]);
   const [joinUrl, setJoinUrl] = useState('');
+  const [verificationMethod, setVerificationMethod] =
+    useState<VerificationMethod>('questions');
+  const [otpMethod, setOtpMethod] = useState<OTPMethod>('phone');
+  const [otpContact, setOtpContact] = useState('');
 
   const groupUrlRef = useRef(''); // direct url
   const joinurlRef = useRef('');
@@ -42,11 +50,53 @@ export default function Modal({
     setQuestions([...questions, { question: '', answer: '' }]);
   };
 
+  const validateForm = () => {
+    const newErrors: { [key: string]: string } = {};
+
+    // Verify at least one method is selected
+    if (!verificationMethod) {
+      newErrors.method = 'يجب اختيار طريقة تحقق واحدة على الأقل';
+    }
+
+    // Validate OTP if selected
+    if (verificationMethod === 'otp' || verificationMethod === 'both') {
+      if (!otpContact) {
+        newErrors.otpContact =
+          otpMethod === 'email'
+            ? 'يرجى إدخال البريد الإلكتروني'
+            : 'يرجى إدخال رقم الهاتف';
+      } else if (
+        otpMethod === 'email' &&
+        !otpContact.match(/^[^\s@]+@[^\s@]+\.[^\s@]+$/)
+      ) {
+        newErrors.otpContact = 'يرجى إدخال بريد إلكتروني صحيح';
+      } else if (
+        otpMethod === 'phone' &&
+        !otpContact.match(/^\+?[\d\s-]{8,}$/)
+      ) {
+        newErrors.otpContact = 'يرجى إدخال رقم هاتف صحيح';
+      }
+    }
+
+    // Validate questions if selected
+    if (verificationMethod === 'questions' || verificationMethod === 'both') {
+      if (questions.length === 0) {
+        newErrors.questions = 'يجب إضافة سؤال واحد على الأقل';
+      }
+    }
+
+    return Object.keys(newErrors).length === 0;
+  };
+
   // create secureJoin link
   const handleCreateSecureLink = async (
-    e: React.FormEvent<HTMLFormElement>
+    e: React.FormEvent<HTMLFormElement>,
   ) => {
-    e.preventDefault(); // not trigger reload
+    e.preventDefault();
+
+    if (!validateForm()) {
+      return;
+    }
 
     const success = await createSecureLink(questions, groupUrlRef.current);
     if (success) formReset(); // double check
@@ -62,7 +112,7 @@ export default function Modal({
   const handleQuestionChange = (
     index: number,
     field: 'question' | 'answer',
-    value: string
+    value: string,
   ) => {
     const newQuestions = [...questions];
     newQuestions[index][field] = value;
@@ -77,15 +127,15 @@ export default function Modal({
   };
 
   return (
-    <main className='min-h-screen w-full px-5 z-40' dir='rtl'>
+    <main className='z-40 min-h-screen w-full px-5' dir='rtl'>
       <Tabs
         value={activeTab}
         onValueChange={setActiveTab}
-        className='w-full max-w-4xl mx-auto backdrop-blur-sm bg-card rounded-xl overflow-hidden'
+        className='mx-auto w-full max-w-4xl overflow-hidden rounded-xl bg-card backdrop-blur-sm'
       >
         {/* tabs */}
         <SignedIn>
-          <TabsList className='grid w-full grid-cols-2 mt-2 mb-2'>
+          <TabsList className='mb-2 mt-2 grid w-full grid-cols-2'>
             <TabsTrigger value='create' className='text-sm md:text-lg'>
               انشئ رابط انضمام
             </TabsTrigger>
@@ -97,7 +147,7 @@ export default function Modal({
 
         {/* create secureLink */}
         <TabsContent value='create'>
-          <Card dir='rtl'>
+          <Card>
             <CardHeader>
               <CardTitle className='text-2xl'>انشئ رابط انضمام آمن</CardTitle>
               <CardDescription>
@@ -114,7 +164,7 @@ export default function Modal({
                     </Label>
                     <Input
                       id='groupUrl'
-                      placeholder='الصق رابط المجموعة هنا'
+                      placeholder='https://chat.whatsapp.com/xxxxx'
                       value={groupUrl}
                       onChange={(e) => {
                         const input = e.target.value;
@@ -122,8 +172,9 @@ export default function Modal({
                         groupUrlRef.current = input;
                       }}
                       required
-                      className='mt-1.5 border-border bg-input focus:border-primary w-full md:w-1/2'
+                      className='mt-1.5 w-full border-border bg-input focus:border-primary md:w-1/2'
                     />
+                    {/* in-time check */}
                     {groupUrlRef.current && (
                       <div className='mt-2 text-sm text-gray-600'>
                         {validateUrl(groupUrlRef.current)
@@ -132,62 +183,92 @@ export default function Modal({
                       </div>
                     )}
                   </div>
-                  {questions.map((q, index) => (
-                    <div key={index} className='space-y-3 p-4 rounded-lg'>
-                      <Label htmlFor={`question-${index}`} className='text-lg'>
-                        السؤال {index + 1}
-                      </Label>
-                      <Input
-                        id={`question-${index}`}
-                        placeholder='ادخل السؤال'
-                        value={q.question}
-                        onChange={(e) =>
-                          handleQuestionChange(
-                            index,
-                            'question',
-                            e.target.value
-                          )
-                        }
-                        required
-                        className='mt-1.5 border-border bg-input focus:border-primary w-full md:w-1/2'
-                      />
-                      <Label htmlFor={`answer-${index}`} className='text-lg'>
-                        الجواب
-                      </Label>
-                      <Input
-                        id={`answer-${index}`}
-                        placeholder='ادخل الجواب'
-                        value={q.answer}
-                        onChange={(e) =>
-                          handleQuestionChange(index, 'answer', e.target.value)
-                        }
-                        required
-                        className='mt-1.5 border-border bg-input focus:border-primaryw-full md:w-1/2'
-                      />
+                  <hr className='border-border' />
+                  <div className='space-y-6'>
+                    <div className='space-y-4'>
+                      <Label className='text-lg'>طريقة التحقق</Label>
+                      <div className='grid grid-cols-2 gap-4 md:grid-cols-3'>
+                        <div
+                          className={cn(
+                            'flex cursor-pointer flex-col items-center gap-2 rounded-lg border p-4 transition-colors',
+                            verificationMethod === 'questions'
+                              ? 'border-primary bg-primary/10'
+                              : 'hover:border-primary/50',
+                          )}
+                          onClick={() => setVerificationMethod('questions')}
+                        >
+                          <div className='rounded-full bg-primary/20 p-2'>
+                            <AlertCircle className='h-6 w-6 text-primary' />
+                          </div>
+                          <span>أسئلة التحقق</span>
+                        </div>
+
+                        <div
+                          className={cn(
+                            'flex cursor-pointer flex-col items-center gap-2 rounded-lg border p-4 transition-colors',
+                            verificationMethod === 'otp'
+                              ? 'border-primary bg-primary/10'
+                              : 'hover:border-primary/50',
+                          )}
+                          onClick={() => setVerificationMethod('otp')}
+                        >
+                          <div className='rounded-full bg-primary/20 p-2'>
+                            <MessageSquare className='h-6 w-6 text-primary' />
+                          </div>
+                          <span>رمز التحقق</span>
+                        </div>
+
+                        <div
+                          className={cn(
+                            'flex cursor-pointer flex-col items-center gap-2 rounded-lg border p-4 transition-colors',
+                            verificationMethod === 'both'
+                              ? 'border-primary bg-primary/10'
+                              : 'hover:border-primary/50',
+                          )}
+                          onClick={() => setVerificationMethod('both')}
+                        >
+                          <div className='rounded-full bg-primary/20 p-2'>
+                            <ShieldCheck className='h-6 w-6 text-primary' />
+                          </div>
+                          <span>كلاهما</span>
+                        </div>
+                      </div>
                     </div>
-                  ))}
-                  <Button
-                    type='button'
-                    variant='outline'
-                    onClick={handleAddQuestion}
-                    className='w-full md:w-1/2'
-                  >
-                    سؤال إضافي
-                    <Plus className='w-4 h-4 mr-2' />
-                  </Button>
+                    {/* OTP */}
+                    {(verificationMethod == 'otp' ||
+                      verificationMethod == 'both') && (
+                      <OTPSection
+                        otpMethod={otpMethod as OTPMethod}
+                        setOtpMethod={setOtpMethod}
+                        otpContact={otpContact}
+                        setOtpContact={setOtpContact}
+                      />
+                    )}
+
+                    {/* Questions Section */}
+                    {(verificationMethod === 'questions' ||
+                      verificationMethod === 'both') && (
+                      <QuestionsSection
+                        questions={questions}
+                        setQuestions={setQuestions}
+                        handleAddQuestion={handleAddQuestion}
+                        handleQuestionChange={handleQuestionChange}
+                      />
+                    )}
+                  </div>
                 </div>
                 <Button type='submit' className='mt-6 w-full md:w-1/2'>
                   انشئ رابط الانضمام
-                  <Send className='w-4 h-4 mr-2' />
+                  <Send className='mr-2 h-4 w-4' />
                 </Button>
               </form>
             </CardContent>
             <CardFooter>
               {secureLink.length > 0 && (
                 <Alert className='w-full px-12' dir='rtl'>
-                  <AlertCircle className='h-4 w-4 right-4 translate-y-1/2' />
+                  <AlertCircle className='right-4 h-4 w-4 translate-y-1/2' />
                   <AlertTitle> أُنشئ رابط الانضمام:</AlertTitle>
-                  <AlertDescription className='mt-2 font-mono text-sm break-all'>
+                  <AlertDescription className='mt-2 break-all font-mono text-sm'>
                     {secureLink}
                   </AlertDescription>
                 </Alert>
@@ -198,7 +279,7 @@ export default function Modal({
 
         {/* join group via secureLink */}
         <TabsContent value='join'>
-          <Card dir='rtl'>
+          <Card>
             <CardHeader>
               <CardTitle className='text-2xl'>ادخل مجموعة بامان</CardTitle>
               <CardDescription>
@@ -222,7 +303,7 @@ export default function Modal({
                         joinurlRef.current = e.target.value;
                       }}
                       required
-                      className='mt-1.5 border-muted-foreground bg-input focus:border-primary w-full md:w-1/2'
+                      className='mt-1.5 w-full border-muted-foreground bg-input focus:border-primary md:w-1/2'
                     />
                     {joinurlRef.current && (
                       <div className='mt-2 text-sm text-gray-600'>
@@ -244,9 +325,12 @@ export default function Modal({
                     quiz.map((q, index) => (
                       <div
                         key={index}
-                        className='p-4 rounded-lg flex flex-col gap-2'
+                        className='flex flex-col gap-2 rounded-lg p-4'
                       >
-                        <Label htmlFor='quizAnswer' className='text-lg font-bold'>
+                        <Label
+                          htmlFor='quizAnswer'
+                          className='text-lg font-bold'
+                        >
                           {q.question}
                         </Label>
                         <Input
@@ -254,14 +338,14 @@ export default function Modal({
                           placeholder='ادخل الجواب'
                           value={quizAnswers[index] || ''}
                           onChange={(
-                            e: React.ChangeEvent<HTMLInputElement>
+                            e: React.ChangeEvent<HTMLInputElement>,
                           ) => {
                             const newAnswers = [...quizAnswers];
                             newAnswers[index] = e.target.value;
                             setQuizAnswers(newAnswers);
                           }}
                           required
-                          className='mt-1.5 border-border bg-input focus:border-primary w-1/2'
+                          className='mt-1.5 w-1/2 border-border bg-input focus:border-primary'
                         />
                       </div>
                     ))}
@@ -269,7 +353,7 @@ export default function Modal({
                 {quiz.length > 0 && (
                   <Button type='submit' className='mt-6 w-full md:w-1/2'>
                     انضم للمجموعة
-                    <Send className='w-4 h-4 mr-2' />
+                    <Send className='mr-2 h-4 w-4' />
                   </Button>
                 )}
               </form>
@@ -277,9 +361,12 @@ export default function Modal({
             <CardFooter>
               {joinLink.length > 0 && (
                 <Alert className='w-full px-12 text-white'>
-                  <AlertCircle className='h-6 w-6 right-4 translate-y-1/2' color='white' />
+                  <AlertCircle
+                    className='right-4 h-6 w-6 translate-y-1/2'
+                    color='white'
+                  />
                   <AlertTitle> انضم للمجموعة:</AlertTitle>
-                  <AlertDescription className='mt-4 font-mono text-sm break-all'>
+                  <AlertDescription className='mt-4 break-all font-mono text-sm'>
                     <a href={joinLink}>{joinLink}</a>
                   </AlertDescription>
                 </Alert>
