@@ -129,7 +129,7 @@ export default function Modal({
             handleQuestionChange={handleQuestionChange}
           />
           {secureLink.length > 0 && (
-            <Alert className='mt-4 w-full px-12' dir='rtl'>
+            <Alert className='m-6 bg-card px-12' dir='rtl'>
               <AlertCircle className='right-4 h-4 w-4 translate-y-1/2' />
               <AlertTitle>أُنشئ رابط الانضمام:</AlertTitle>
               <AlertDescription className='mt-2 break-all font-mono text-sm'>
