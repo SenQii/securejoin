@@ -6,34 +6,45 @@ import { VerificationMethod } from '@/lib/types';
 interface VerificationMethodsProps {
   verificationMethod: VerificationMethod;
   setVerificationMethod: (method: VerificationMethod) => void;
+  vertifyMethodRef: React.MutableRefObject<VerificationMethod>;
 }
 
 export function VerificationMethods({
   verificationMethod,
   setVerificationMethod,
+  vertifyMethodRef,
 }: VerificationMethodsProps) {
   return (
     <div className='space-y-4'>
       <Label className='text-lg'>طريقة التحقق</Label>
-      <div className='grid grid-cols-2 gap-3 md:grid-cols-3'>
+      <div className='grid grid-cols-3 gap-3 md:grid-cols-3'>
         <MethodCard
           icon={<AlertCircle className='h-6 w-6 text-primary' />}
           label='أسئلة التحقق'
           isSelected={verificationMethod === 'questions'}
-          onClick={() => setVerificationMethod('questions')}
+          onClick={() => {
+            setVerificationMethod('questions');
+            vertifyMethodRef.current = 'questions';
+          }}
         />
         <MethodCard
           icon={<MessageSquare className='h-6 w-6 text-primary' />}
           label='رمز التحقق'
           isSelected={verificationMethod === 'otp'}
-          onClick={() => setVerificationMethod('otp')}
+          onClick={() => {
+            setVerificationMethod('otp');
+            vertifyMethodRef.current = 'otp';
+          }}
         />
         <MethodCard
           icon={<ShieldCheck className='h-6 w-6 text-primary' />}
           label='كلاهما'
           isSelected={verificationMethod === 'both'}
-          onClick={() => setVerificationMethod('both')}
-          className='col-span-2 md:col-span-1'
+          onClick={() => {
+            setVerificationMethod('both');
+            vertifyMethodRef.current = 'both';
+          }}
+          // className='col-span-2 md:col-span-1'
         />
       </div>
     </div>

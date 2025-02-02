@@ -1,5 +1,5 @@
 export type VerificationMethod = 'questions' | 'otp' | 'both';
-export type OTPMethod = 'email' | 'phone';
+export type OTPMethod = 'mail' | 'sms';
 
 export interface MCOption {
   label: string;
@@ -8,7 +8,7 @@ export interface MCOption {
 
 export interface QuizQuestion {
   question: string;
-  questionType?: 'text' | 'mcq';
+  questionType: 'text' | 'mcq';
   answer: string;
   options?: MCOption[];
 }
