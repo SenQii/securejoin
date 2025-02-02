@@ -2,27 +2,31 @@ import { useState } from 'react';
 import { URL } from '@/lib/constant';
 import toast from 'react-hot-toast';
 import { validateUrl } from '@/lib/utils';
-import { QuizQuestion } from '@/lib/types';
+import { QuizQuestion, VerificationMethod } from '@/lib/types';
 
 import React from 'react';
 
 export default function useSecureLink(
-  tokenRef: React.MutableRefObject<string>
+  tokenRef: React.MutableRefObject<string>,
 ) {
   const [secureLink, setSecureLink] = useState('');
 
   const createSecureLink = async (
+    VerificationMethod: VerificationMethod,
     questions: QuizQuestion[],
-    groupUrl: string
+    groupUrl: string,
+    otpMethod?: 'mail' | 'sms',
   ) => {
     // validation
     if (!validateUrl(groupUrl)) {
       toast.error(
-        'لم ندعم هذا الرابط بعد، يرجى استخدام رابط منصة اجتماعية أخرى'
+        'لم ندعم هذا الرابط بعد، يرجى استخدام رابط منصة اجتماعية أخرى',
       );
       return false;
     }
     try {
+      console.log(VerificationMethod);
+      // return;
       const response = await fetch(`${URL}/create_link`, {
         method: 'POST',
         headers: {
@@ -32,6 +36,8 @@ export default function useSecureLink(
         body: JSON.stringify({
           quiz_list: questions,
           original_url: groupUrl,
+          vertify_methods: VerificationMethod,
+          otp_method: VerificationMethod === 'questions' ? null : otpMethod,
         }),
       });
       if (!response.ok)
