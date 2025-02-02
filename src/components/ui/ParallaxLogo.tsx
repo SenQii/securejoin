@@ -17,7 +17,7 @@ export function ParallaxLogo() {
     <img
       src='/logo.svg'
       alt='Background Logo'
-      className='absolute left-1/2 -translate-x-1/2 w-screen max-w-6xl h-auto bg-opacity-60'
+      className='absolute left-1/2 h-auto w-screen max-w-6xl -translate-x-1/2 bg-opacity-60'
       style={{
         transform: `translate(-50%, ${offset}px)`,
         top: '10%',

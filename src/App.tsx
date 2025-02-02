@@ -35,7 +35,7 @@ function App() {
   }, [user]);
 
   return (
-    <div className='min-h-screen flex flex-col items-center bg-background gap-10 overflow-x-hidden'>
+    <div className='flex min-h-screen w-screen flex-col items-center gap-10 overflow-x-hidden bg-background'>
       <Header />
 
       <Hero />
