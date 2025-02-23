@@ -3,7 +3,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { AlertCircle } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { SignedIn } from '@clerk/clerk-react';
-import { OTPMethod, QuizQuestion, VerificationMethod } from '@/lib/types';
+import { QuizQuestion, VerificationMethod } from '@/lib/types';
 import useSecureLink from '@/hooks/useSecureLink';
 import { useQuiz } from '@/hooks/useQuiz';
 import { CreateForm } from '@/features/create-form';
@@ -22,8 +22,9 @@ export default function Modal({
   const [joinUrl, setJoinUrl] = useState('');
   const [verificationMethod, setVerificationMethod] =
     useState<VerificationMethod>('questions');
-  const [otpMethod, setOtpMethod] = useState<OTPMethod>('sms');
   const [otpContact, setOtpContact] = useState('');
+  const [joinLink, setJoinLink] = useState('');
+  const [isLinkVerified, setIsLinkVerified] = useState(false);
 
   const groupUrlRef = useRef(''); // direct url
   const joinurlRef = useRef('');
@@ -39,9 +40,9 @@ export default function Modal({
     setQuizAnswers,
     checkAnswers,
     getQuiz,
-    OTPmethod,
-    setOTPmethod,
     verificationMethods,
+    otpMethod,
+    setOtpMethod,
   } = useQuiz(tokenRef);
 
   const handleAddQuestion = () => {
@@ -70,7 +71,6 @@ export default function Modal({
       vertifyMethodRef.current,
       questions,
       groupUrlRef.current,
-      otpMethod,
     );
     if (success) {
       setGroupUrl('');
@@ -82,14 +82,18 @@ export default function Modal({
   // join via secureLink
   const handleJoinGroup = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    if (verificationMethod == 'otp' || verificationMethod == 'both') {
+      // TODO: Implement OTP verification
+    }
     await checkAnswers(joinurlRef.current);
   };
 
-  const handleVerifyLink = async () => {
+  const handleVerifyLink = async (): Promise<boolean> => {
     const success = await getQuiz(joinurlRef.current);
     if (success) {
       OTPref.current = verificationMethods.includes('OTP');
     }
+    return success;
   };
 
   return (
@@ -150,12 +154,15 @@ export default function Modal({
             setQuizAnswers={setQuizAnswers}
             handleJoinGroup={handleJoinGroup}
             handleVerifyLink={handleVerifyLink}
-            hasOTP={OTPref.current}
             verificationMethod={verificationMethods}
-            OTPmethod={OTPmethod}
-            setOTPmethod={setOTPmethod}
+            hasOTP={OTPref.current}
+            otpMethod={otpMethod}
             otpContact={otpContact}
             setOtpContact={setOtpContact}
+            joinLink={joinLink}
+            setJoinLink={setJoinLink}
+            isLinkVerified={isLinkVerified}
+            setIsLinkVerified={setIsLinkVerified}
           />
         </TabsContent>
       </Tabs>
