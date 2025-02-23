@@ -6,10 +6,7 @@ function Header() {
   const { openSignIn } = useClerk();
 
   return (
-    // background: rgba(67, 120, 255, 0.01);
-    // box-shadow: 0px 4px 4px 0px rgba(0, 0, 0, 0.19);
-    // backdrop-filter: blur(5px);
-    <header className='sticky top-0 z-50 flex w-full flex-row items-center justify-between px-5 py-2 shadow-md backdrop-blur-sm md:py-5'>
+    <header className='sticky top-0 z-50 flex w-full flex-row items-center justify-between bg-[rgba(32,39,71,0.76)] px-5 py-2 shadow-md backdrop-blur-sm md:bg-transparent md:py-5'>
       <div className='flex flex-col items-start gap-1'>
         <div className='flex items-end gap-1.5'>
           <img

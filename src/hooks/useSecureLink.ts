@@ -25,7 +25,6 @@ export default function useSecureLink(
       return false;
     }
     try {
-      console.log(VerificationMethod);
       // return;
       const response = await fetch(`${URL}/create_link`, {
         method: 'POST',

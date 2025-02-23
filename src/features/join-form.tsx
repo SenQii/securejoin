@@ -8,10 +8,12 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
-import { Send } from 'lucide-react';
+import { AlertCircle, Send, CheckCircle2 } from 'lucide-react';
 import { OTPSection } from './otp-section';
-import { QuizQuestion, OTPMethod } from '@/lib/types';
+import { OTPMethod, QuizQuestion } from '@/lib/types';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { toast } from 'react-hot-toast';
 
 interface JoinFormProps {
   joinUrl: string;
@@ -21,13 +23,16 @@ interface JoinFormProps {
   quizAnswers: string[];
   setQuizAnswers: (answers: string[]) => void;
   handleJoinGroup: (e: React.FormEvent<HTMLFormElement>) => Promise<void>;
-  handleVerifyLink: () => Promise<void>;
   hasOTP: boolean;
+  handleVerifyLink: () => Promise<boolean>;
   verificationMethod: string[];
-  OTPmethod: OTPMethod;
-  setOTPmethod: (method: OTPMethod) => void;
+  otpMethod: OTPMethod;
   otpContact: string;
   setOtpContact: (contact: string) => void;
+  joinLink: string;
+  setJoinLink: (link: string) => void;
+  isLinkVerified: boolean;
+  setIsLinkVerified: (value: boolean) => void;
 }
 
 export function JoinForm({
@@ -38,15 +43,36 @@ export function JoinForm({
   quizAnswers,
   setQuizAnswers,
   handleJoinGroup,
-  handleVerifyLink,
   hasOTP,
+  handleVerifyLink,
   verificationMethod,
-  OTPmethod,
-  setOTPmethod,
-  otpContact,
-  setOtpContact,
+  otpMethod,
+  joinLink,
+  setJoinLink,
+  isLinkVerified,
+  setIsLinkVerified,
 }: JoinFormProps) {
-  console.log('method', verificationMethod);
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    if (!isLinkVerified) {
+      const valid_url = await handleVerifyLink();
+      if (!valid_url) {
+        toast.error('رابط غير صحيح، حاول مرة أخرى');
+        return;
+      }
+      toast.success('تم التحقق من الرابط بنجاح');
+      setIsLinkVerified(true);
+      return;
+    }
+    await handleJoinGroup(e);
+  };
+
+  const handleOTPSuccess = (directLink?: string) => {
+    if (directLink) {
+      setJoinLink(directLink);
+      console.log('Join link:', directLink);
+    }
+  };
 
   return (
     <Card>
@@ -57,108 +83,131 @@ export function JoinForm({
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <form onSubmit={handleJoinGroup}>
+        <form onSubmit={handleSubmit} autoComplete='off'>
           <div className='space-y-6'>
-            <div>
-              <Label htmlFor='joinUrl' className='text-lg'>
-                رابط الانضمام الآمن
-              </Label>
-              <Input
-                id='joinUrl'
-                placeholder='https://securejoin.com/xxxxx'
-                value={joinUrl}
-                onChange={(e) => {
-                  setJoinUrl(e.target.value);
-                  joinurlRef.current = e.target.value;
-                }}
-                required
-                className='mt-1.5 w-full border-muted-foreground bg-input focus:border-primary md:w-1/2'
-              />
-              {joinurlRef.current && (
-                <div className='mt-2 text-sm text-gray-600'>
-                  {joinurlRef.current.includes('https://securejoin.com')
-                    ? ''
-                    : 'رابط غير مدعوم، يجب أن بدأ الرابط بـ https://securejoin.com'}
+            {!isLinkVerified && (
+              <div>
+                <Label htmlFor='joinUrl' className='text-lg'>
+                  رابط الانضمام الآمن
+                </Label>
+                <Input
+                  id='joinUrl'
+                  placeholder='https://securejoin.com/xxxxx'
+                  value={joinUrl}
+                  onChange={(e) => {
+                    setJoinUrl(e.target.value);
+                    joinurlRef.current = e.target.value;
+                  }}
+                  required
+                  disabled={isLinkVerified}
+                  className='mt-1.5 w-full border-muted-foreground bg-input focus:border-primary md:w-1/2'
+                />
+                {joinurlRef.current && (
+                  <div className='mt-2 text-sm text-gray-600'>
+                    {joinurlRef.current.includes('https://securejoin.com')
+                      ? ''
+                      : 'رابط غير صحيح، يجب أن بدأ الرابط بـ https://securejoin.com'}
+                  </div>
+                )}
+                <Button type='submit' className='mt-6 w-full md:w-1/2'>
+                  تحقق من الرابط
+                </Button>
+              </div>
+            )}
+
+            {isLinkVerified && (
+              <>
+                {/* Success Message */}
+                <div className='flex flex-col items-center justify-center space-y-4 rounded-lg border border-green-200 bg-green-50 p-6'>
+                  <CheckCircle2 className='h-12 w-12 text-green-500' />
+                  <p className='text-center text-lg font-medium text-green-700'>
+                    تم التحقق من الرابط بنجاح
+                  </p>
                 </div>
-              )}
-              <Button
-                type='button'
-                className='mt-6 w-full md:w-1/2'
-                onClick={handleVerifyLink}
-              >
-                تحقق من الرابط
-              </Button>
-            </div>
 
-            {verificationMethod.includes('QUESTIONS') &&
-              quiz.length > 0 &&
-              quiz.map((q, index) => (
-                <div
-                  key={index}
-                  className='flex flex-col gap-2 rounded-lg border p-4'
-                >
-                  <Label htmlFor='quizAnswer' className='text-lg font-bold'>
-                    {q.question}
-                  </Label>
-
-                  {q.questionType === 'text' ? (
-                    <Input
-                      id='quizAnswer'
-                      placeholder='ادخل الجواب'
-                      value={quizAnswers[index] || ''}
-                      onChange={(e) => {
-                        const newAnswers = [...quizAnswers];
-                        newAnswers[index] = e.target.value;
-                        setQuizAnswers(newAnswers);
-                      }}
-                      required
-                      className='mt-1.5 w-1/2 border-border bg-input focus:border-primary'
-                    />
-                  ) : (
-                    <RadioGroup
-                      value={quizAnswers[index] || ''}
-                      onValueChange={(value) => {
-                        const newAnswers = [...quizAnswers];
-                        newAnswers[index] = value;
-                        setQuizAnswers(newAnswers);
-                      }}
-                      className='flex flex-col gap-2'
+                {/* Verification Methods */}
+                {(verificationMethod.includes('QUESTIONS') ||
+                  verificationMethod.includes('BOTH')) &&
+                  quiz.length > 0 &&
+                  quiz.map((q, index) => (
+                    <div
+                      key={index}
+                      className='flex flex-col gap-2 rounded-lg border p-4'
                     >
-                      {q.options?.map((option, optionIndex) => (
-                        <div
-                          key={optionIndex}
-                          className='flex items-center gap-2'
-                        >
-                          <RadioGroupItem
-                            value={option.label}
-                            id={`q${index}-opt${optionIndex}`}
-                          />
-                          <Label htmlFor={`q${index}-opt${optionIndex}`}>
-                            {option.label}
-                          </Label>
-                        </div>
-                      ))}
-                    </RadioGroup>
-                  )}
-                </div>
-              ))}
+                      <Label htmlFor='quizAnswer' className='text-lg font-bold'>
+                        {q.question}
+                      </Label>
 
-            {(hasOTP || verificationMethod.includes('OTP')) && (
-              <OTPSection
-                otpMethod={OTPmethod}
-                setOtpMethod={setOTPmethod}
-                otpContact={otpContact}
-                setOtpContact={setOtpContact}
-                mode='join'
-              />
+                      {q.questionType === 'text' ? (
+                        <Input
+                          id='quizAnswer'
+                          placeholder='ادخل الجواب'
+                          value={quizAnswers[index] || ''}
+                          onChange={(e) => {
+                            const newAnswers = [...quizAnswers];
+                            newAnswers[index] = e.target.value;
+                            setQuizAnswers(newAnswers);
+                          }}
+                          required
+                          className='mt-1.5 w-1/2 border-border bg-input focus:border-primary'
+                        />
+                      ) : (
+                        <RadioGroup
+                          value={quizAnswers[index] || ''}
+                          onValueChange={(value) => {
+                            const newAnswers = [...quizAnswers];
+                            newAnswers[index] = value;
+                            setQuizAnswers(newAnswers);
+                          }}
+                          className='flex flex-col gap-2'
+                        >
+                          {q.options?.map((option, optionIndex) => (
+                            <div
+                              key={optionIndex}
+                              className='flex items-center gap-2'
+                            >
+                              <RadioGroupItem
+                                value={option.label}
+                                id={`q${index}-opt${optionIndex}`}
+                              />
+                              <Label htmlFor={`q${index}-opt${optionIndex}`}>
+                                {option.label}
+                              </Label>
+                            </div>
+                          ))}
+                        </RadioGroup>
+                      )}
+                    </div>
+                  ))}
+
+                {(hasOTP || verificationMethod.includes('OTP')) && (
+                  <OTPSection
+                    mode='join'
+                    onVerificationSuccess={handleOTPSuccess}
+                    otpMethod={otpMethod}
+                  />
+                )}
+
+                {/* Show join button only when needed */}
+                {!joinLink && verificationMethod.includes('QUESTIONS') && (
+                  <Button type='submit' className='mt-6 w-full md:w-1/2'>
+                    انضم للمجموعة
+                    <Send className='mr-2 h-4 w-4' />
+                  </Button>
+                )}
+
+                {joinLink && (
+                  <Alert className='mt-4 bg-card px-12' dir='rtl'>
+                    <AlertCircle className='right-4 h-4 w-4 translate-y-1/2' />
+                    <AlertTitle>رابط الانضمام:</AlertTitle>
+                    <AlertDescription className='mt-2 break-all font-mono text-sm'>
+                      {joinLink}
+                    </AlertDescription>
+                  </Alert>
+                )}
+              </>
             )}
           </div>
-          {quiz.length > 0 && (
-            <Button type='submit' className='mt-6 w-full md:w-1/2'>
-              انضم للمجموعة
-              <Send className='mr-2 h-4 w-4' />
-            </Button>
-          )}
         </form>
       </CardContent>
     </Card>

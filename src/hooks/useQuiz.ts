@@ -7,7 +7,9 @@ export function useQuiz(tokenRef: React.MutableRefObject<string>) {
   const [quiz, setQuiz] = useState<QuizQuestion[]>([]);
   const [quizAnswers, setQuizAnswers] = useState<string[]>([]);
   const [joinLink, setJoinLink] = useState('');
-  const [OTPmethod, setOTPmethod] = useState<'sms' | 'mail'>('mail');
+  const [otpMethod, setOtpMethod] = useState<'sms' | 'mail' | undefined>(
+    undefined,
+  );
   const [verificationMethods, setVerificationMethods] = useState<string[]>([]);
 
   // onSubmit
@@ -76,28 +78,17 @@ export function useQuiz(tokenRef: React.MutableRefObject<string>) {
       // Set verification methods from server response
       setVerificationMethods(data.vertify_methods || []);
 
-      // CASE: quiz only
-      if (data.message === 'Questions') {
-        setQuiz(data.quiz);
-        return true;
-      }
-
       // CASE: OTP only
-      if (data.message === 'OTP') {
-        setOTPmethod(data.otp_method);
-        console.log(data.otp_method);
-
-        return true;
+      if (data.message === 'OTP' || data.message === 'BOTH') {
+        setOtpMethod(data.otp_method);
       }
 
       // CASE: both
-      if (data.message === 'Both') {
+      if (data.message === 'BOTH' || data.message === 'Questions') {
         setQuiz(data.quiz);
-        setOTPmethod(data.otp_method);
-        return true;
       }
 
-      return false;
+      return true;
     } catch (error) {
       console.log('could not post to server', error);
       toast.error('حدث خطأ أثناء التحقق من الرابط');
@@ -112,8 +103,8 @@ export function useQuiz(tokenRef: React.MutableRefObject<string>) {
     setQuizAnswers,
     checkAnswers,
     getQuiz,
-    OTPmethod,
-    setOTPmethod,
+    otpMethod,
+    setOtpMethod,
     verificationMethods,
   };
 }

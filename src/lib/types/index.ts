@@ -1,5 +1,5 @@
 export type VerificationMethod = 'questions' | 'otp' | 'both';
-export type OTPMethod = 'mail' | 'sms';
+export type OTPMethod = 'mail' | 'sms' | undefined;
 
 export interface MCOption {
   label: string;
