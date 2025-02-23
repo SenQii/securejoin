@@ -48,7 +48,7 @@ export function useOTP(method: 'sms' | 'mail') {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ code: otpCode }),
+        body: JSON.stringify({ code: otpCode, contact: otpContact }),
       });
 
       if (!response.ok) {
