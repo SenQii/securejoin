@@ -1,6 +1,7 @@
 import { useClerk } from '@clerk/clerk-react';
 import { SignedIn, SignedOut, UserButton } from '@clerk/clerk-react';
 import { Tooltip } from './tooltip';
+import { DashboardIcon } from '@radix-ui/react-icons';
 
 function Header() {
   const { openSignIn } = useClerk();
@@ -8,7 +9,10 @@ function Header() {
   return (
     <header className='sticky top-0 z-50 flex w-full flex-row items-center justify-between bg-[rgba(32,39,71,0.76)] px-5 py-2 shadow-md backdrop-blur-sm md:bg-transparent md:py-5'>
       <div className='flex flex-col items-start gap-1'>
-        <div className='flex items-end gap-1.5'>
+        <div
+          className='flex cursor-pointer items-end gap-1.5'
+          onClick={() => (window.location.href = '/')}
+        >
           <img
             src='/logo.svg'
             alt='SecureJoin'
@@ -42,7 +46,15 @@ function Header() {
       </SignedOut>
       <SignedIn>
         <div className='flex cursor-pointer flex-col items-center gap-1'>
-          <UserButton />
+          <UserButton>
+            <UserButton.MenuItems>
+              <UserButton.Link
+                label='لوحة التحكم'
+                labelIcon={<DashboardIcon />}
+                href='/dashboard'
+              />
+            </UserButton.MenuItems>
+          </UserButton>
         </div>
       </SignedIn>
     </header>

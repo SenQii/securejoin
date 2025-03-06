@@ -6,6 +6,8 @@ import Header from '@/components/ui/header';
 import { ParallaxLogo } from './components/ui/ParallaxLogo';
 import Modal from './components/modal';
 import Hero from './components/hero';
+import { Routes, Route } from 'react-router-dom';
+import Dashboard from './components/Dashboard';
 // add reanimted? add some animations to the page
 
 function App() {
@@ -38,8 +40,17 @@ function App() {
     <div className='flex min-h-screen w-screen flex-col items-center gap-10 bg-background'>
       <Header />
 
-      <Hero />
-      <Modal tokenRef={tokenRef} />
+      <Routes>
+        <Route
+          path='/'
+          element={
+            <>
+              <Hero /> <Modal tokenRef={tokenRef} />
+            </>
+          }
+        />
+        <Route path='/dashboard' element={<Dashboard />} />
+      </Routes>
 
       <ParallaxLogo />
       <Toaster />
