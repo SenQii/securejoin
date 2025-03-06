@@ -5,6 +5,7 @@ import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { useOTP } from '@/hooks/useOTP';
 import { OTPMethod } from '@/lib/types';
+import { useRef } from 'react';
 
 interface OTPSectionProps {
   mode: 'create' | 'join';
@@ -54,7 +55,7 @@ export function OTPSection({
   }
 
   return (
-    <div className='space-y-4 rounded-lg border p-3'>
+    <div className='space-y-8 rounded-lg border p-3'>
       <OTPHeader otpMethod={otpMethod} />
       <OTPInputs
         otpMethod={otpMethod}
@@ -137,45 +138,85 @@ function OTPInputs({
   onSendOTP,
   onVerifyOTP,
 }: OTPInputsProps) {
+  const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
+  const handleChange = (index: number, value: string) => {
+    if (!/^\d*$/.test(value)) return;
+
+    const newOtpCode = otpCode.split('');
+    newOtpCode[index] = value;
+    setOtpCode(newOtpCode.join(''));
+
+    if (value && index < inputRefs.current.length - 1) {
+      inputRefs.current[index + 1]?.focus();
+    }
+  };
+
+  const handlePaste = (e: React.ClipboardEvent<HTMLInputElement>) => {
+    e.preventDefault();
+    const pasteData = e.clipboardData.getData('text').slice(0, 6); // أخذ 6 أرقام فقط
+    if (!/^\d+$/.test(pasteData)) return;
+
+    setOtpCode(pasteData);
+    pasteData.split('').forEach((num, i) => {
+      if (inputRefs.current[i]) {
+        inputRefs.current[i]!.value = num;
+      }
+    });
+    inputRefs.current[pasteData.length - 1]?.focus();
+  };
+
   return (
     <div className='space-y-4'>
       {isContactInputVisible && (
-        <div className='space-y-2'>
-          <Input
-            placeholder={
-              otpMethod === 'mail'
-                ? 'ادخل البريد الإلكتروني'
-                : 'ادخل رقم الهاتف'
-            }
-            value={otpContact}
-            onChange={(e) => setOtpContact?.(e.target.value)}
-            type={otpMethod === 'mail' ? 'email' : 'tel'}
-            className='mt-2'
-          />
+        <div className='gap-4 space-y-4 md:flex md:items-center md:justify-start'>
+          <Label className='font-medium'>
+            {otpMethod === 'mail' ? 'البريد الإلكتروني' : 'رقم الهاتف'}
+          </Label>
+          <div className='flex flex-col items-center gap-4 md:flex-row'>
+            <Input
+              placeholder={
+                otpMethod === 'mail'
+                  ? 'ادخل البريد الإلكتروني'
+                  : 'ادخل رقم الهاتف'
+              }
+              value={otpContact}
+              onChange={(e) => setOtpContact?.(e.target.value)}
+              type={otpMethod === 'mail' ? 'email' : 'tel'}
+              className='w-full'
+            />
 
-          <Button
-            type='button'
-            variant='outline'
-            className='w-full md:w-auto'
-            onClick={onSendOTP}
-          >
-            إرسال رمز التحقق
-          </Button>
+            <Button
+              type='button'
+              variant='outline'
+              className='w-full'
+              onClick={onSendOTP}
+            >
+              إرسال رمز التحقق
+            </Button>
+          </div>
         </div>
       )}
 
       {showOtpInput && (
-        <div className='space-y-2'>
+        <div className='space-y-4'>
           <Label>رمز التحقق</Label>
-          <Input
-            placeholder='ادخل رمز التحقق'
-            type='text'
-            inputMode='numeric'
-            maxLength={6}
-            value={otpCode}
-            onChange={(e) => setOtpCode(e.target.value)}
-            className='w-full md:w-1/3'
-          />
+          <div className='flex justify-center gap-2'>
+            {Array.from({ length: 6 }).map((_, index) => (
+              <input
+                key={index}
+                ref={(el) => (inputRefs.current[index] = el)}
+                type='text'
+                inputMode='numeric'
+                dir='rtl'
+                pattern='[0-9]*'
+                maxLength={1}
+                placeholder={`${index + 1}`}
+                className='border-grey-400 h-12 w-12 border-b-2 bg-transparent text-center text-lg focus:border-blue-500 focus:outline-none'
+                onChange={(e) => handleChange(index, e.target.value)}
+                onPaste={handlePaste}
+              />
+            ))}
+          </div>
           <Button
             type='button'
             variant='outline'

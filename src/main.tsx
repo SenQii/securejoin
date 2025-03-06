@@ -3,6 +3,7 @@ import { createRoot } from 'react-dom/client';
 import App from './App.tsx';
 import './index.css';
 import { ClerkProvider } from '@clerk/clerk-react';
+import { BrowserRouter } from 'react-router-dom';
 
 const CLERK_KEY = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY;
 
@@ -12,9 +13,11 @@ if (!CLERK_KEY) {
 }
 
 createRoot(document.getElementById('root')!).render(
-  <StrictMode>
-    <ClerkProvider publishableKey={CLERK_KEY}>
-      <App />
-    </ClerkProvider>
-  </StrictMode>
+  <BrowserRouter>
+    <StrictMode>
+      <ClerkProvider publishableKey={CLERK_KEY}>
+        <App />
+      </ClerkProvider>
+    </StrictMode>
+  </BrowserRouter>,
 );
