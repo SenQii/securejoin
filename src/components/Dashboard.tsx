@@ -6,6 +6,8 @@ import {
   CardTitle,
 } from './ui/card';
 
+import { useAuth } from '@clerk/clerk-react';
+
 import { CartesianGrid, Legend, Line, LineChart, XAxis, YAxis } from 'recharts';
 
 import {
@@ -14,6 +16,9 @@ import {
   ChartTooltipContent,
 } from '@/components/ui/chart';
 import { type ChartConfig } from '@/components/ui/chart';
+import { useEffect, useState } from 'react';
+import { URL } from '@/lib/constant';
+import { ChartBar, CheckCircle, ClipboardList } from 'lucide-react';
 
 const chartConfig = {
   Group_A: { label: 'Group A', color: '#204fb4' },
@@ -29,19 +34,21 @@ const Chartdata = [
   { day: '32', month: '01', Group_A: 19, Group_B: 16 },
 ];
 
-// type QuizType = {
-//   id: string;
-//   original_Link: string;
-//   secure_Link: string;
-//   verification_methods: string[];
-//   otp_method?: string;
-//   attempts_log: {
-//     date: string;
-//     attempts: number;
-//     success_attempts: number;
-//   }[];
-//   isActive: boolean;
-// };
+type Quiz = {
+  id: string;
+  ownerId: string;
+  url: string;
+  groupName?: string;
+  original_url: string;
+  OTPmethod?: string;
+  lastAttemptAt?: string;
+  attempts_log: {
+    date: string;
+    attempts: number;
+    success_attempts: number;
+  }[];
+  status: 'active' | 'active';
+};
 
 // const get_data = () => {
 //   // fetch data from the server
@@ -83,13 +90,62 @@ const Chartdata = [
 //   // 3: return full config for the chart
 // };
 
-function Dashboard({
-  userToken,
-}: {
-  userToken: React.MutableRefObject<string>;
-}) {
+function Dashboard() {
+  const { getToken } = useAuth();
+  const [token, setToken] = useState('');
+  const [quizzes, setQuizzes] = useState<Quiz[]>([]);
+
+  const [expandedQuiz, setExpandedQuiz] = useState<string | null>(null);
+
+  const handleExpandClick = (id: string) => {
+    setExpandedQuiz((prev) => (prev === id ? null : id)); // Toggle expansion
+  };
+
+  // run at sign in
+  useEffect(() => {
+    const get_Access_Token = async () => {
+      await getToken()
+        .then((token) => {
+          if (token) setToken(token);
+        })
+        .catch((err) => {
+          console.log('could not get token', err);
+        });
+    };
+    // get the AT
+    get_Access_Token();
+  }, []);
+
+  useEffect(() => {
+    if (!token) return;
+
+    async function fetchData() {
+      try {
+        const res = await fetch(`${URL}/get_user_quiz`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'access-token': `Bearer ${token}`,
+          },
+        });
+
+        const data = await res.json();
+        console.log('fetching data: ', data.quiz);
+        if (res.ok) {
+          console.log('User quizzes:', data.quiz);
+          setQuizzes(data.quiz);
+        } else {
+          console.error('Error fetching quizzes:', data);
+        }
+      } catch (error) {
+        console.error('Fetch error:', error);
+      }
+    }
+    fetchData();
+  }, [token]);
+
   // grant access to the dashboard
-  if (!userToken.current)
+  if (!token)
     return (
       <main className='gap-5px-5 z-40 flex h-full w-full flex-col items-center justify-center'>
         <div className='flex h-72 w-full flex-col items-center justify-center gap-24 bg-background p-24'>
@@ -192,49 +248,128 @@ function Dashboard({
       </div>
 
       {/* Group Info Section */}
+
       <Card className='w-full max-w-4xl rounded-xl bg-card backdrop-blur-sm'>
         <CardHeader>
-          <CardTitle className='text-2xl'>المجموعات</CardTitle>
-          <CardDescription>
-            عمليات الدخول للمجموعات خلال الشهر الحالي
-          </CardDescription>
+          <CardTitle className='text-2xl'>الاختبارات</CardTitle>
+          <CardDescription>نظرة عامة على جميع الاختبارات</CardDescription>
         </CardHeader>
-        <CardContent className='grid grid-cols-2 gap-4'>
-          {[
-            { group: 'Group A', count: 120 },
-            { group: 'Group B', count: 100 },
-          ].map(({ group, count }, index) => (
-            <Card
-              key={index}
-              className='w-full max-w-64 rounded-xl bg-card backdrop-blur-sm'
-            >
-              <CardHeader>
-                <CardTitle>{group}</CardTitle>
-                <CardDescription>عدد الدخول لهذا الشهر</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <p className='text-3xl'>{count}</p>
-              </CardContent>
-            </Card>
-          ))}
+        <CardContent className='grid grid-cols-1 gap-4 md:grid-cols-2'>
+          {quizzes.length > 0 ? (
+            quizzes.map(({ id, original_url, attempts_log, lastAttemptAt }) => {
+              const totalAttempts = attempts_log?.length
+                ? attempts_log[attempts_log.length - 1].attempts
+                : 0;
+
+              const successAttempts = attempts_log?.length
+                ? attempts_log[attempts_log.length - 1].success_attempts
+                : 0;
+
+              const statusIcon = '🟢';
+
+              const lastActivity = lastAttemptAt
+                ? new Date(lastAttemptAt).toLocaleDateString('ar-EG', {
+                    year: 'numeric',
+                    month: 'short',
+                    day: 'numeric',
+                  })
+                : 'لا يوجد';
+
+              const isExpanded = expandedQuiz === id;
+
+              return (
+                <Card
+                  key={id}
+                  className={`flex w-full max-w-64 flex-col gap-2 rounded-xl bg-card p-3 backdrop-blur-sm transition-all duration-300 ${
+                    isExpanded ? 'h-auto w-96' : 'h-24' // Expand on click
+                  }`}
+                >
+                  {/* Collapsed View */}
+                  <div className='flex items-center justify-between'>
+                    <div className='flex items-center gap-2'>
+                      <ClipboardList className='text-primary' />
+                      <CardTitle className='text-sm'>
+                        {id.split('-')[0]}
+                      </CardTitle>
+                    </div>
+                    <div className='flex items-center gap-2 text-xs text-muted-foreground'>
+                      <ChartBar />
+                      <span>{totalAttempts}</span>
+                    </div>
+                    <div className='flex items-center gap-2 text-xs text-muted-foreground'>
+                      <CheckCircle />
+                      <span>{statusIcon}</span>
+                    </div>
+                  </div>
+
+                  {/* Expand/Collapse Button */}
+                  <div
+                    onClick={() => handleExpandClick(id)}
+                    className='mt-2 cursor-pointer text-sm text-primary'
+                  >
+                    {isExpanded ? 'إخفاء التفاصيل' : 'عرض التفاصيل'}
+                  </div>
+
+                  {/* Expanded View with more details */}
+                  <div
+                    className={`overflow-hidden transition-all duration-300 ease-in-out ${
+                      isExpanded ? 'max-h-screen' : 'max-h-0'
+                    }`}
+                    style={{
+                      padding: isExpanded ? '10px' : '0', // Add padding when expanded
+                    }}
+                  >
+                    {/* Full Details */}
+                    <div className='mt-2 flex flex-col gap-2'>
+                      <div className='flex items-center gap-2 text-xs text-muted-foreground'>
+                        <span>الرابط:</span>
+                        <a
+                          href={original_url}
+                          target='_blank'
+                          rel='noreferrer'
+                          className='text-primary'
+                        >
+                          {original_url}
+                        </a>
+                      </div>
+                      <div className='flex flex-col items-start gap-2 text-xs text-muted-foreground'>
+                        <span>محاولات: {totalAttempts}</span>
+                        <span>محاولات ناجحة: {successAttempts}</span>
+                        <span>
+                          محاولات فاشلة: {totalAttempts - successAttempts}
+                        </span>
+                      </div>
+                      <div className='flex items-center gap-2 text-xs text-muted-foreground'>
+                        <span>تاريخ آخر تحديث: {lastActivity}</span>
+                      </div>
+                    </div>
+                  </div>
+                </Card>
+              );
+            })
+          ) : (
+            <p className='text-center text-lg text-muted-foreground'>
+              لا يوجد اختبارات بعد.
+            </p>
+          )}
         </CardContent>
       </Card>
 
       {/* Most Active Users Section (Placeholder) */}
-      <Card className='w-full max-w-4xl rounded-xl bg-card backdrop-blur-sm'>
+      {/* <Card className='w-full max-w-4xl rounded-xl bg-card backdrop-blur-sm'>
         <CardHeader>
           <CardTitle className='text-2xl'>أكثر المستخدمين نشاطاً</CardTitle>
           <CardDescription>
             المستخدمون الأكثر تفاعلاً خلال الشهر الحالي
           </CardDescription>
         </CardHeader>
-        <CardContent>
-          {/* TODO: Fetch and map most active users here */}
-          <p className='text-center text-lg text-muted-foreground'>
+        <CardContent> */}
+      {/* TODO: Fetch and map most active users here */}
+      {/* <p className='text-center text-lg text-muted-foreground'>
             🚀 قيد التطوير
           </p>
         </CardContent>
-      </Card>
+      </Card> */}
     </main>
   );
 }

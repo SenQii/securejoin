@@ -51,7 +51,7 @@ function App() {
             </>
           }
         />
-        <Route path='/dashboard' element={<Dashboard userToken={tokenRef} />} />
+        <Route path='/dashboard' element={<Dashboard />} />
       </Routes>
 
       <ParallaxLogo />
