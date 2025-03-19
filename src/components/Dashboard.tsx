@@ -29,61 +29,59 @@ const Chartdata = [
   { day: '32', month: '01', Group_A: 19, Group_B: 16 },
 ];
 
-type QuizType = {
-  id: string;
-  original_Link: string;
-  secure_Link: string;
-  verification_methods: string[];
-  otp_method?: string;
-  attempts_log: {
-    date: string;
-    attempts: number;
-    success_attempts: number;
-  }[];
-  isActive: boolean;
-};
+// type QuizType = {
+//   id: string;
+//   original_Link: string;
+//   secure_Link: string;
+//   verification_methods: string[];
+//   otp_method?: string;
+//   attempts_log: {
+//     date: string;
+//     attempts: number;
+//     success_attempts: number;
+//   }[];
+//   isActive: boolean;
+// };
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-const get_data = () => {
-  // fetch data from the server
-  // temp::
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const dummyData: QuizType[] = [
-    {
-      id: 'dgfhidwskcndbh',
-      original_Link: 'https://www.google.com',
-      secure_Link: 'https://securejoin.com/11',
-      verification_methods: ['QUESTIONS', 'OTP'],
-      otp_method: 'sms',
-      attempts_log: [
-        { date: '2021-10-01', attempts: 5, success_attempts: 2 },
-        { date: '2021-10-02', attempts: 9, success_attempts: 4 },
-        { date: '2021-10-03', attempts: 12, success_attempts: 3 },
-        { date: '2021-10-04', attempts: 22, success_attempts: 6 },
-        { date: '2021-10-05', attempts: 27, success_attempts: 5 },
-      ],
-      isActive: true,
-    },
-    {
-      id: 'fehiwdksnc',
-      original_Link: 'https://www.facebook.com',
-      secure_Link: 'https://securejoin.com/12',
-      verification_methods: ['QUESTIONS'],
-      attempts_log: [
-        { date: '2021-10-01', attempts: 5, success_attempts: 4 },
-        { date: '2021-10-01', attempts: 12, success_attempts: 5 },
-        { date: '2021-10-02', attempts: 14, success_attempts: 3 },
-        { date: '2021-10-04', attempts: 19, success_attempts: 4 },
-        { date: '2021-10-15', attempts: 27, success_attempts: 6 },
-      ],
-      isActive: true,
-    },
-  ];
-  // format data for the chart
-  // 1: get the dates & devide them into weeks
-  // 2: get the attempts for each week
-  // 3: return full config for the chart
-};
+// const get_data = () => {
+//   // fetch data from the server
+//   // temp::
+//   const dummyData: QuizType[] = [
+//     {
+//       id: 'dgfhidwskcndbh',
+//       original_Link: 'https://www.google.com',
+//       secure_Link: 'https://securejoin.com/11',
+//       verification_methods: ['QUESTIONS', 'OTP'],
+//       otp_method: 'sms',
+//       attempts_log: [
+//         { date: '2021-10-01', attempts: 5, success_attempts: 2 },
+//         { date: '2021-10-02', attempts: 9, success_attempts: 4 },
+//         { date: '2021-10-03', attempts: 12, success_attempts: 3 },
+//         { date: '2021-10-04', attempts: 22, success_attempts: 6 },
+//         { date: '2021-10-05', attempts: 27, success_attempts: 5 },
+//       ],
+//       isActive: true,
+//     },
+//     {
+//       id: 'fehiwdksnc',
+//       original_Link: 'https://www.facebook.com',
+//       secure_Link: 'https://securejoin.com/12',
+//       verification_methods: ['QUESTIONS'],
+//       attempts_log: [
+//         { date: '2021-10-01', attempts: 5, success_attempts: 4 },
+//         { date: '2021-10-01', attempts: 12, success_attempts: 5 },
+//         { date: '2021-10-02', attempts: 14, success_attempts: 3 },
+//         { date: '2021-10-04', attempts: 19, success_attempts: 4 },
+//         { date: '2021-10-15', attempts: 27, success_attempts: 6 },
+//       ],
+//       isActive: true,
+//     },
+//   ];
+//   // format data for the chart
+//   // 1: get the dates & devide them into weeks
+//   // 2: get the attempts for each week
+//   // 3: return full config for the chart
+// };
 
 function Dashboard({
   userToken,
