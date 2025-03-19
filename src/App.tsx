@@ -16,20 +16,22 @@ function App() {
   const { getToken } = useAuth();
   const { user } = useUser();
 
+  const get_Access_Token = async () => {
+    await getToken()
+      .then((token) => {
+        tokenRef.current = token || '';
+      })
+      .catch((err) => {
+        console.log('could not get token', err);
+      });
+  };
+
   // run at sign in
   useEffect(() => {
     // get the AT
-    const get_Access_Token = async () => {
-      await getToken()
-        .then((token) => {
-          tokenRef.current = token || '';
-        })
-        .catch((err) => {
-          console.log('could not get token', err);
-        });
+    get_Access_Token();
 
-      // console.log('token:', tokenRef.current);
-    };
+    // console.log('token:', tokenRef.current);
 
     if (user) get_Access_Token();
     else console.log('user not signed in');
@@ -37,7 +39,7 @@ function App() {
   }, [user]);
 
   return (
-    <div className='flex min-h-screen w-screen flex-col items-center gap-10 bg-background'>
+    <div className='flex min-h-screen w-screen flex-col items-center gap-10 bg-background pb-24'>
       <Header />
 
       <Routes>
@@ -49,7 +51,7 @@ function App() {
             </>
           }
         />
-        <Route path='/dashboard' element={<Dashboard />} />
+        <Route path='/dashboard' element={<Dashboard userToken={tokenRef} />} />
       </Routes>
 
       <ParallaxLogo />
