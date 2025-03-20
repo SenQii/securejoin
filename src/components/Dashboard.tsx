@@ -18,7 +18,8 @@ import {
 import { type ChartConfig } from '@/components/ui/chart';
 import { useEffect, useState } from 'react';
 import { URL } from '@/lib/constant';
-import { ChartBar, CheckCircle, ClipboardList } from 'lucide-react';
+import { ChartBar, CheckCircle, ClipboardList, Trash } from 'lucide-react';
+import { Button } from './ui/button';
 
 const chartConfig = {
   Group_A: { label: 'Group A', color: '#204fb4' },
@@ -94,11 +95,44 @@ function Dashboard() {
   const { getToken } = useAuth();
   const [token, setToken] = useState('');
   const [quizzes, setQuizzes] = useState<Quiz[]>([]);
+  const [loadingQuizId, setLoadingQuizId] = useState<string | null>(null);
 
   const [expandedQuiz, setExpandedQuiz] = useState<string | null>(null);
 
   const handleExpandClick = (id: string) => {
     setExpandedQuiz((prev) => (prev === id ? null : id)); // Toggle expansion
+  };
+
+  const handleDeleteQuiz = async (id: string) => {
+    if (!confirm(`هل أنت متأكد أنك تريد حذف هذا الاختبار؟: ${id}`)) return;
+
+    console.log('Deleting quiz:', id);
+
+    setLoadingQuizId(id);
+    try {
+      const res = await fetch(`${URL}/delete_quiz`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'access-token': `Bearer ${token}`,
+        },
+        body: JSON.stringify({ quiz_id: id }),
+      });
+
+      if (!res.ok) {
+        console.error('Failed to delete quiz:');
+        alert('حدث خطأ أثناء الحذف، حاول مرة أخرى.');
+        return;
+      }
+
+      // Remove the deleted quiz from state
+      setQuizzes((prev) => prev.filter((quiz) => quiz.id !== id));
+    } catch (error) {
+      console.error('Failed to delete quiz:', error);
+      alert('حدث خطأ أثناء الحذف، حاول مرة أخرى.');
+    } finally {
+      setLoadingQuizId(null);
+    }
   };
 
   // run at sign in
@@ -256,97 +290,119 @@ function Dashboard() {
         </CardHeader>
         <CardContent className='grid grid-cols-1 gap-4 md:grid-cols-2'>
           {quizzes.length > 0 ? (
-            quizzes.map(({ id, original_url, attempts_log, lastAttemptAt }) => {
-              const totalAttempts = attempts_log?.length
-                ? attempts_log[attempts_log.length - 1].attempts
-                : 0;
+            quizzes.map(
+              ({ id, original_url, url, attempts_log, lastAttemptAt }) => {
+                const totalAttempts = attempts_log?.length
+                  ? attempts_log[attempts_log.length - 1].attempts
+                  : 0;
 
-              const successAttempts = attempts_log?.length
-                ? attempts_log[attempts_log.length - 1].success_attempts
-                : 0;
+                const successAttempts = attempts_log?.length
+                  ? attempts_log[attempts_log.length - 1].success_attempts
+                  : 0;
 
-              const statusIcon = '🟢';
+                const statusIcon = '🟢';
 
-              const lastActivity = lastAttemptAt
-                ? new Date(lastAttemptAt).toLocaleDateString('ar-EG', {
-                    year: 'numeric',
-                    month: 'short',
-                    day: 'numeric',
-                  })
-                : 'لا يوجد';
+                const lastActivity = lastAttemptAt
+                  ? new Date(lastAttemptAt).toLocaleDateString('ar-EG', {
+                      year: 'numeric',
+                      month: 'short',
+                      day: 'numeric',
+                    })
+                  : 'لا يوجد';
 
-              const isExpanded = expandedQuiz === id;
+                const isExpanded = expandedQuiz === id;
 
-              return (
-                <Card
-                  key={id}
-                  className={`flex w-full max-w-64 flex-col gap-2 rounded-xl bg-card p-3 backdrop-blur-sm transition-all duration-300 ${
-                    isExpanded ? 'h-auto w-96' : 'h-24' // Expand on click
-                  }`}
-                >
-                  {/* Collapsed View */}
-                  <div className='flex items-center justify-between'>
-                    <div className='flex items-center gap-2'>
-                      <ClipboardList className='text-primary' />
-                      <CardTitle className='text-sm'>
-                        {id.split('-')[0]}
-                      </CardTitle>
-                    </div>
-                    <div className='flex items-center gap-2 text-xs text-muted-foreground'>
-                      <ChartBar />
-                      <span>{totalAttempts}</span>
-                    </div>
-                    <div className='flex items-center gap-2 text-xs text-muted-foreground'>
-                      <CheckCircle />
-                      <span>{statusIcon}</span>
-                    </div>
-                  </div>
-
-                  {/* Expand/Collapse Button */}
-                  <div
-                    onClick={() => handleExpandClick(id)}
-                    className='mt-2 cursor-pointer text-sm text-primary'
-                  >
-                    {isExpanded ? 'إخفاء التفاصيل' : 'عرض التفاصيل'}
-                  </div>
-
-                  {/* Expanded View with more details */}
-                  <div
-                    className={`overflow-hidden transition-all duration-300 ease-in-out ${
-                      isExpanded ? 'max-h-screen' : 'max-h-0'
+                return (
+                  <Card
+                    key={id}
+                    className={`flex w-full max-w-64 flex-col gap-2 rounded-xl bg-card p-3 backdrop-blur-sm transition-all duration-300 ${
+                      isExpanded ? 'h-auto w-96' : 'h-24' // Expand on click
                     }`}
-                    style={{
-                      padding: isExpanded ? '10px' : '0', // Add padding when expanded
-                    }}
                   >
-                    {/* Full Details */}
-                    <div className='mt-2 flex flex-col gap-2'>
-                      <div className='flex items-center gap-2 text-xs text-muted-foreground'>
-                        <span>الرابط:</span>
-                        <a
-                          href={original_url}
-                          target='_blank'
-                          rel='noreferrer'
-                          className='text-primary'
-                        >
-                          {original_url}
-                        </a>
-                      </div>
-                      <div className='flex flex-col items-start gap-2 text-xs text-muted-foreground'>
-                        <span>محاولات: {totalAttempts}</span>
-                        <span>محاولات ناجحة: {successAttempts}</span>
-                        <span>
-                          محاولات فاشلة: {totalAttempts - successAttempts}
-                        </span>
+                    {/* Collapsed View */}
+                    <div className='flex items-center justify-between'>
+                      <div className='flex items-center gap-2'>
+                        <ClipboardList className='text-primary' />
+                        <CardTitle className='text-sm'>
+                          {id.split('-')[0]}
+                        </CardTitle>
                       </div>
                       <div className='flex items-center gap-2 text-xs text-muted-foreground'>
-                        <span>تاريخ آخر تحديث: {lastActivity}</span>
+                        <ChartBar />
+                        <span>{totalAttempts}</span>
+                      </div>
+                      <div className='flex items-center gap-2 text-xs text-muted-foreground'>
+                        <CheckCircle />
+                        <span>{statusIcon}</span>
                       </div>
                     </div>
-                  </div>
-                </Card>
-              );
-            })
+
+                    {/* Expand/Collapse Button */}
+                    <div
+                      onClick={() => handleExpandClick(id)}
+                      className='mt-2 cursor-pointer text-sm text-primary'
+                    >
+                      {isExpanded ? 'إخفاء التفاصيل' : 'عرض التفاصيل'}
+                    </div>
+
+                    {/* Expanded View with more details */}
+                    <div
+                      className={`overflow-hidden transition-all duration-300 ease-in-out ${
+                        isExpanded ? 'max-h-screen' : 'max-h-0'
+                      }`}
+                      style={{
+                        padding: isExpanded ? '10px' : '0', // Add padding when expanded
+                      }}
+                    >
+                      {/* Full Details */}
+                      <div className='mt-2 flex flex-col gap-2'>
+                        <div className='flex items-center gap-2 text-left text-xs text-muted-foreground'>
+                          <span>الرابط:</span>
+                          <a
+                            href={original_url}
+                            target='_blank'
+                            rel='noreferrer'
+                            className='text-primary hover:underline'
+                          >
+                            {original_url}
+                          </a>
+                        </div>
+                        <div className='flex items-center gap-2 text-left text-xs text-muted-foreground'>
+                          <span>الرابط:</span>
+                          <a
+                            href={url}
+                            target='_blank'
+                            rel='noreferrer'
+                            className='text-primary hover:underline'
+                          >
+                            {url}
+                          </a>
+                        </div>
+
+                        <div className='flex flex-col items-start gap-2 text-xs text-muted-foreground'>
+                          <span>محاولات: {totalAttempts}</span>
+                          <span>محاولات ناجحة: {successAttempts}</span>
+                          <span>
+                            محاولات فاشلة: {totalAttempts - successAttempts}
+                          </span>
+                        </div>
+                        <div className='flex items-center gap-2 text-xs text-muted-foreground'>
+                          <span>تاريخ آخر تحديث: {lastActivity}</span>
+                        </div>
+                      </div>
+                      <Button
+                        onClick={() => handleDeleteQuiz(id)}
+                        variant='ghost'
+                        className='right-2 top-2 p-1 text-red-500 hover:text-red-600'
+                        disabled={loadingQuizId === id}
+                      >
+                        <Trash />
+                      </Button>
+                    </div>
+                  </Card>
+                );
+              },
+            )
           ) : (
             <p className='text-center text-lg text-muted-foreground'>
               لا يوجد اختبارات بعد.
