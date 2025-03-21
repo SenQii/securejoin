@@ -16,7 +16,6 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { toast } from 'react-hot-toast';
 import { useLocation } from 'react-router-dom';
 import { useEffect, useState } from 'react';
-import { URL } from '@/lib/constant';
 
 interface JoinFormProps {
   joinLink: string;
@@ -79,7 +78,7 @@ export function JoinForm({
   useEffect(() => {
     const pathname = location.pathname.substring(1); // Extract codename from URL
     if (pathname) {
-      setSecureLink(`${URL}/${pathname}`);
+      setSecureLink(`https://securejoin.vercel.app/${pathname}`);
       handleJoin(pathname);
     }
   }, [location]);
