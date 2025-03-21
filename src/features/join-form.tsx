@@ -14,7 +14,6 @@ import { OTPMethod, QuizQuestion } from '@/lib/types';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { toast } from 'react-hot-toast';
-import { useLocation } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 
 interface JoinFormProps {
@@ -51,7 +50,6 @@ export function JoinForm({
   setIsLinkVerified,
 }: JoinFormProps) {
   const [secureLink, setSecureLink] = useState('');
-  const location = useLocation();
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -76,15 +74,15 @@ export function JoinForm({
   };
 
   useEffect(() => {
-    const pathname = location.pathname.substring(1); // Extract codename from URL
+    const pathname = window.location.href; // Extract codename from URL
     if (pathname) {
-      setSecureLink(`https://securejoin.vercel.app/${pathname}`);
-      handleJoin(pathname);
+      setSecureLink(pathname);
+      handleJoin();
     }
   }, [location]);
 
-  const handleJoin = (link: string) => {
-    console.log('Joining with:', link);
+  const handleJoin = () => {
+    console.log('Joining with:', window.location.href);
     // Fetch quiz data using the codename
   };
 
