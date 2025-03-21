@@ -23,7 +23,6 @@ export default function Modal({
   const [verificationMethod, setVerificationMethod] =
     useState<VerificationMethod>('questions');
   const [otpContact, setOtpContact] = useState('');
-  const [joinLink, setJoinLink] = useState('');
   const [isLinkVerified, setIsLinkVerified] = useState(false);
 
   const groupUrlRef = useRef(''); // direct url
@@ -146,8 +145,8 @@ export default function Modal({
         {/* join group via secureLink */}
         <TabsContent value='join'>
           <JoinForm
-            joinUrl={joinUrl}
-            setJoinUrl={setJoinUrl}
+            joinLink={joinUrl}
+            setJoinLink={setJoinUrl}
             joinurlRef={joinurlRef}
             quiz={quiz}
             quizAnswers={quizAnswers}
@@ -159,8 +158,6 @@ export default function Modal({
             otpMethod={otpMethod}
             otpContact={otpContact}
             setOtpContact={setOtpContact}
-            joinLink={joinLink}
-            setJoinLink={setJoinLink}
             isLinkVerified={isLinkVerified}
             setIsLinkVerified={setIsLinkVerified}
           />

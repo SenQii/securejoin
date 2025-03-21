@@ -14,10 +14,13 @@ import { OTPMethod, QuizQuestion } from '@/lib/types';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { toast } from 'react-hot-toast';
+import { useLocation } from 'react-router-dom';
+import { useEffect, useState } from 'react';
+import { URL } from '@/lib/constant';
 
 interface JoinFormProps {
-  joinUrl: string;
-  setJoinUrl: (url: string) => void;
+  joinLink: string;
+  setJoinLink: (url: string) => void;
   joinurlRef: React.MutableRefObject<string>;
   quiz: QuizQuestion[];
   quizAnswers: string[];
@@ -29,15 +32,13 @@ interface JoinFormProps {
   otpMethod: OTPMethod;
   otpContact: string;
   setOtpContact: (contact: string) => void;
-  joinLink: string;
-  setJoinLink: (link: string) => void;
   isLinkVerified: boolean;
   setIsLinkVerified: (value: boolean) => void;
 }
 
 export function JoinForm({
-  joinUrl,
-  setJoinUrl,
+  joinLink,
+  setJoinLink,
   joinurlRef,
   quiz,
   quizAnswers,
@@ -47,11 +48,12 @@ export function JoinForm({
   handleVerifyLink,
   verificationMethod,
   otpMethod,
-  joinLink,
-  setJoinLink,
   isLinkVerified,
   setIsLinkVerified,
 }: JoinFormProps) {
+  const [secureLink, setSecureLink] = useState('');
+  const location = useLocation();
+
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!isLinkVerified) {
@@ -74,6 +76,19 @@ export function JoinForm({
     }
   };
 
+  useEffect(() => {
+    const pathname = location.pathname.substring(1); // Extract codename from URL
+    if (pathname) {
+      setSecureLink(`${URL}/${pathname}`);
+      handleJoin(pathname);
+    }
+  }, [location]);
+
+  const handleJoin = (link: string) => {
+    console.log('Joining with:', link);
+    // Fetch quiz data using the codename
+  };
+
   return (
     <Card>
       <CardHeader>
@@ -93,9 +108,9 @@ export function JoinForm({
                 <Input
                   id='joinUrl'
                   placeholder='https://securejoin.com/xxxxx'
-                  value={joinUrl}
+                  value={secureLink}
                   onChange={(e) => {
-                    setJoinUrl(e.target.value);
+                    setSecureLink(e.target.value);
                     joinurlRef.current = e.target.value;
                   }}
                   required

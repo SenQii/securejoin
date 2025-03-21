@@ -46,7 +46,7 @@ export default function useSecureLink(
       if (data.status === 'success') {
         setSecureLink(data.link || '');
         toast.success('تم إنشاء الرابط بنجاح');
-        return true;
+        return data.link;
       }
 
       //   otherwise
