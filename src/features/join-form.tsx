@@ -74,15 +74,20 @@ export function JoinForm({
   };
 
   useEffect(() => {
-    const pathname = window.location.href; // Extract codename from URL
-    if (pathname) {
-      setSecureLink(pathname);
-      handleJoin();
+    const fullURL = window.location.href; // get the full url
+    const extras = window.location.pathname.substring(1); // get the path
+
+    //  if ther is no path, dont fill
+    if (!extras) return;
+
+    if (fullURL) {
+      setSecureLink(fullURL);
+      handleJoin(fullURL);
     }
   }, [location]);
 
-  const handleJoin = () => {
-    console.log('Joining with:', window.location.href);
+  const handleJoin = (fullURL: string) => {
+    console.log('Joining with:', fullURL);
     // Fetch quiz data using the codename
   };
 
