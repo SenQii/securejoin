@@ -44,7 +44,7 @@ function App() {
 
       <Routes>
         <Route
-          path='/'
+          path='/:securelink?'
           element={
             <>
               <Hero /> <Modal tokenRef={tokenRef} />
