@@ -109,7 +109,7 @@ export function JoinForm({
                 </Label>
                 <Input
                   id='joinUrl'
-                  placeholder='https://securejoin.com/xxxxx'
+                  placeholder='https://securejoin.vercel.app/xxxxx'
                   value={secureLink}
                   onChange={(e) => {
                     setSecureLink(e.target.value);
@@ -121,9 +121,11 @@ export function JoinForm({
                 />
                 {joinurlRef.current && (
                   <div className='mt-2 text-sm text-gray-600'>
-                    {joinurlRef.current.includes('https://securejoin.com')
+                    {joinurlRef.current.includes(
+                      'https://securejoin.vercel.app',
+                    )
                       ? ''
-                      : 'رابط غير صحيح، يجب أن بدأ الرابط بـ https://securejoin.com'}
+                      : 'رابط غير صحيح، يجب أن بدأ الرابط بـ https://securejoin.vercel.app'}
                   </div>
                 )}
                 <Button type='submit' className='mt-6 w-full md:w-1/2'>

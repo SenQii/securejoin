@@ -70,6 +70,7 @@ export default function Modal({
       vertifyMethodRef.current,
       questions,
       groupUrlRef.current,
+      otpMethod,
     );
     if (success) {
       setGroupUrl('');
