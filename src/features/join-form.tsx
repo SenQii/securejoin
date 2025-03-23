@@ -18,7 +18,6 @@ import { useEffect, useState } from 'react';
 
 interface JoinFormProps {
   joinLink: string;
-  setJoinLink: (url: string) => void;
   joinurlRef: React.MutableRefObject<string>;
   quiz: QuizQuestion[];
   quizAnswers: string[];
@@ -36,7 +35,6 @@ interface JoinFormProps {
 
 export function JoinForm({
   joinLink,
-  setJoinLink,
   joinurlRef,
   quiz,
   quizAnswers,
@@ -68,8 +66,6 @@ export function JoinForm({
 
   const handleOTPSuccess = (directLink?: string) => {
     if (directLink) {
-      setJoinLink(directLink);
-      console.log('Join link:', directLink);
     }
   };
 
