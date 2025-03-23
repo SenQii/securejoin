@@ -19,7 +19,6 @@ export default function Modal({
   const [questions, setQuestions] = useState<QuizQuestion[]>([
     { question: '', answer: '', questionType: 'text' },
   ]);
-  const [joinUrl, setJoinUrl] = useState('');
   const [verificationMethod, setVerificationMethod] =
     useState<VerificationMethod>('questions');
   const [otpContact, setOtpContact] = useState('');
@@ -41,6 +40,7 @@ export default function Modal({
     getQuiz,
     verificationMethods,
     otpMethod,
+    joinLink,
     setOtpMethod,
   } = useQuiz(tokenRef);
 
@@ -146,8 +146,7 @@ export default function Modal({
         {/* join group via secureLink */}
         <TabsContent value='join'>
           <JoinForm
-            joinLink={joinUrl}
-            setJoinLink={setJoinUrl}
+            joinLink={joinLink}
             joinurlRef={joinurlRef}
             quiz={quiz}
             quizAnswers={quizAnswers}
