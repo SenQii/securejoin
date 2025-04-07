@@ -31,7 +31,7 @@ interface JoinFormProps {
   setOtpContact: (contact: string) => void;
   isLinkVerified: boolean;
   setIsLinkVerified: (value: boolean) => void;
-  quiz_id: string;
+  quiz_id?: string;
 }
 
 export function JoinForm({

@@ -7,7 +7,7 @@ export interface MCOption {
 }
 
 export interface QuizQuestion {
-  id: string;
+  id?: string;
   question: string;
   questionType: 'text' | 'mcq';
   answer: string;

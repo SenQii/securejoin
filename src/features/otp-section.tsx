@@ -13,7 +13,7 @@ interface OTPSectionProps {
   onVerificationSuccess?: (directLink?: string) => void;
   otpMethod: OTPMethod;
   setOtpMethod?: (method: OTPMethod) => void;
-  quiz_id: string;
+  quiz_id?: string;
 }
 
 export function OTPSection({
