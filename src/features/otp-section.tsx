@@ -158,9 +158,16 @@ function OTPInputs({
     }
   };
 
+  const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    // Only allow numbers and ensure it starts with 5
+    if (!/^5?\d{0,8}$/.test(value)) return;
+    setOtpContact?.(value);
+  };
+
   const handlePaste = (e: React.ClipboardEvent<HTMLInputElement>) => {
     e.preventDefault();
-    const pasteData = e.clipboardData.getData('text').slice(0, 6); // أخذ 6 أرقام فقط
+    const pasteData = e.clipboardData.getData('text').slice(0, 6);
     if (!/^\d+$/.test(pasteData)) return;
 
     setOtpCode(pasteData);
@@ -180,23 +187,41 @@ function OTPInputs({
             {otpMethod === 'mail' ? 'البريد الإلكتروني' : 'رقم الهاتف'}
           </Label>
           <div className='flex flex-col items-center gap-4 md:flex-row'>
-            <Input
-              placeholder={
-                otpMethod === 'mail'
-                  ? 'ادخل البريد الإلكتروني'
-                  : 'ادخل رقم الهاتف'
-              }
-              value={otpContact}
-              onChange={(e) => setOtpContact?.(e.target.value)}
-              type={otpMethod === 'mail' ? 'email' : 'tel'}
-              className='w-full'
-            />
+            {otpMethod === 'sms' ? (
+              <div className='flex w-full items-center gap-2'>
+                <Input
+                  placeholder='5XXXXXXXX'
+                  value={otpContact}
+                  onChange={handlePhoneChange}
+                  type='tel'
+                  className='w-full'
+                  dir='ltr'
+                  pattern='5[0-9]{8}'
+                  maxLength={9}
+                />
+                <div className='flex h-10 items-center rounded-md border border-input bg-muted px-3 text-sm text-muted-foreground'>
+                  +966
+                </div>
+              </div>
+            ) : (
+              <Input
+                placeholder='ادخل البريد الإلكتروني'
+                value={otpContact}
+                onChange={(e) => setOtpContact?.(e.target.value)}
+                type='email'
+                className='w-full'
+              />
+            )}
 
             <Button
               type='button'
               variant='outline'
               className='w-full'
               onClick={onSendOTP}
+              disabled={
+                otpMethod === 'sms' &&
+                (!otpContact || !/^5\d{8}$/.test(otpContact))
+              }
             >
               إرسال رمز التحقق
             </Button>
@@ -214,7 +239,7 @@ function OTPInputs({
                 ref={(el) => (inputRefs.current[index] = el)}
                 type='text'
                 inputMode='numeric'
-                dir='rtl'
+                dir='ltr'
                 pattern='[0-9]*'
                 maxLength={1}
                 placeholder={`${index + 1}`}

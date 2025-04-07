@@ -11,12 +11,13 @@ export function useOTP(method: 'sms' | 'mail') {
 
   const handleSendOTP = async () => {
     try {
+      const contact = method === 'sms' ? `+966${otpContact}` : otpContact;
       const response = await fetch(`${URL}/send_otp`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ contact: otpContact, method }),
+        body: JSON.stringify({ contact, method }),
       });
       if (!response.ok) {
         if (response.status === 403) {
