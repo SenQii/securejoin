@@ -215,8 +215,10 @@ export function JoinForm({
                   <Alert className='mt-4 bg-card px-12' dir='rtl'>
                     <AlertCircle className='right-4 h-4 w-4 translate-y-1/2' />
                     <AlertTitle>رابط الانضمام:</AlertTitle>
-                    <AlertDescription className='mt-2 break-all font-mono text-sm'>
-                      {joinLink}
+                    <AlertDescription className='mt-2 flex w-full items-center justify-center bg-red-200 font-mono text-sm'>
+                      <Button variant={'link'} className='w-full' type='button'>
+                        {joinLink}
+                      </Button>
                     </AlertDescription>
                   </Alert>
                 )}
