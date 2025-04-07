@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import toast from 'react-hot-toast';
+import { URL } from '@/lib/constant';
 
 export function useOTP(method: 'sms' | 'mail') {
   const [otpContact, setOtpContact] = useState('');
@@ -10,7 +11,7 @@ export function useOTP(method: 'sms' | 'mail') {
 
   const handleSendOTP = async () => {
     try {
-      const response = await fetch('http://localhost:3000/send_otp', {
+      const response = await fetch(`${URL}/send_otp`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -38,17 +39,23 @@ export function useOTP(method: 'sms' | 'mail') {
     }
   };
 
-  const verifyOTP = async (): Promise<{
+  const verifyOTP = async (
+    quiz_id: string,
+  ): Promise<{
     success: boolean;
     directLink?: string;
   }> => {
     try {
-      const response = await fetch('http://localhost:3000/verify_otp', {
+      const response = await fetch(`${URL}/verify_otp`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ code: otpCode, contact: otpContact }),
+        body: JSON.stringify({
+          code: otpCode,
+          contact: otpContact,
+          quiz_id,
+        }),
       });
 
       if (!response.ok) {

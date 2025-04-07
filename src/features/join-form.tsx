@@ -31,6 +31,7 @@ interface JoinFormProps {
   setOtpContact: (contact: string) => void;
   isLinkVerified: boolean;
   setIsLinkVerified: (value: boolean) => void;
+  quiz_id?: string;
 }
 
 export function JoinForm({
@@ -46,6 +47,7 @@ export function JoinForm({
   otpMethod,
   isLinkVerified,
   setIsLinkVerified,
+  quiz_id,
 }: JoinFormProps) {
   const [secureLink, setSecureLink] = useState('');
 
@@ -200,6 +202,7 @@ export function JoinForm({
                     mode='join'
                     onVerificationSuccess={handleOTPSuccess}
                     otpMethod={otpMethod}
+                    quiz_id={quiz_id}
                   />
                 )}
 

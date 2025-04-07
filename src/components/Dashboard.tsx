@@ -342,7 +342,7 @@ function Dashboard() {
           <CardTitle className='text-2xl'>الاختبارات</CardTitle>
           <CardDescription>نظرة عامة على جميع الاختبارات</CardDescription>
         </CardHeader>
-        <CardContent className='grid grid-cols-1 gap-4 md:grid-cols-2'>
+        <CardContent className='flex flex-col items-center gap-4 overflow-hidden md:grid md:grid-cols-2'>
           {quizzes.length > 0 ? (
             quizzes.map(
               ({ id, original_url, url, attempts_log, lastAttemptAt }) => {
@@ -353,8 +353,6 @@ function Dashboard() {
                 const successAttempts = attempts_log?.length
                   ? attempts_log[attempts_log.length - 1].success_attempts
                   : 0;
-
-                const statusIcon = '🟢';
 
                 const lastActivity = lastAttemptAt
                   ? new Date(lastAttemptAt).toLocaleDateString('ar-EG', {
@@ -376,25 +374,28 @@ function Dashboard() {
                     {/* Collapsed View */}
                     <div className='flex items-center justify-between'>
                       <div className='flex items-center gap-2'>
-                        <ClipboardList className='text-primary' />
-                        <CardTitle className='text-sm'>
+                        <div className='flex h-8 w-8 items-center justify-center rounded-full bg-primary/10'>
+                          <ClipboardList className='h-4 w-4 text-primary' />
+                        </div>
+                        <CardTitle className='text-sm font-bold'>
                           {id.split('-')[0]}
                         </CardTitle>
                       </div>
-                      <div className='flex items-center gap-2 text-xs text-muted-foreground'>
-                        <ChartBar />
-                        <span>{totalAttempts}</span>
-                      </div>
-                      <div className='flex items-center gap-2 text-xs text-muted-foreground'>
-                        <CheckCircle />
-                        <span>{statusIcon}</span>
+                      <div className='flex items-center gap-2'>
+                        <div className='flex items-center gap-1 text-sm font-medium'>
+                          <ChartBar className='h-4 w-4 text-primary' />
+                          <span>{totalAttempts}</span>
+                        </div>
+                        <div className='flex items-center gap-1 text-xs text-muted-foreground'>
+                          <CheckCircle className='h-3 w-3 text-green-500' />
+                        </div>
                       </div>
                     </div>
 
                     {/* Expand/Collapse Button */}
                     <div
                       onClick={() => handleExpandClick(id)}
-                      className='mt-2 cursor-pointer text-sm text-primary'
+                      className='mt-2 cursor-pointer text-sm text-primary hover:text-primary/80'
                     >
                       {isExpanded ? 'إخفاء التفاصيل' : 'عرض التفاصيل'}
                     </div>
@@ -405,7 +406,7 @@ function Dashboard() {
                         isExpanded ? 'max-h-screen' : 'max-h-0'
                       }`}
                       style={{
-                        padding: isExpanded ? '10px' : '0', // Add padding when expanded
+                        padding: isExpanded ? '10px' : '0',
                       }}
                     >
                       {/* Full Details */}
@@ -450,7 +451,7 @@ function Dashboard() {
                         className='right-2 top-2 p-1 text-red-500 hover:text-red-600'
                         disabled={loadingQuizId === id}
                       >
-                        <Trash />
+                        <Trash className='h-4 w-4' />
                       </Button>
                     </div>
                   </Card>
@@ -465,7 +466,6 @@ function Dashboard() {
         </CardContent>
       </Card>
 
-      {/* Most Active Users Section (Placeholder) */}
       {/* <Card className='w-full max-w-4xl rounded-xl bg-card backdrop-blur-sm'>
         <CardHeader>
           <CardTitle className='text-2xl'>أكثر المستخدمين نشاطاً</CardTitle>
