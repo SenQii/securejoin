@@ -47,7 +47,7 @@ export default function Modal({
   const handleAddQuestion = () => {
     setQuestions([
       ...questions,
-      { question: '', answer: '', questionType: 'text' },
+      { question: '', answer: '', questionType: 'text', id: '' },
     ]);
   };
 
@@ -74,7 +74,14 @@ export default function Modal({
     );
     if (success) {
       setGroupUrl('');
-      setQuestions([{ question: '', answer: '', questionType: 'text' }]);
+      setQuestions([
+        {
+          question: '',
+          answer: '',
+          questionType: 'text',
+          id: '',
+        },
+      ]);
       document.getElementById('groupUrl')?.focus();
     }
   };
