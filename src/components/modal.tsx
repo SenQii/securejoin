@@ -160,6 +160,7 @@ export default function Modal({
             setOtpContact={setOtpContact}
             isLinkVerified={isLinkVerified}
             setIsLinkVerified={setIsLinkVerified}
+            quiz_id={quiz[0].id || ''}
           />
         </TabsContent>
       </Tabs>

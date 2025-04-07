@@ -6,12 +6,14 @@ import { Button } from '@/components/ui/button';
 import { useOTP } from '@/hooks/useOTP';
 import { OTPMethod } from '@/lib/types';
 import { useRef } from 'react';
+import { toast } from 'react-hot-toast';
 
 interface OTPSectionProps {
   mode: 'create' | 'join';
   onVerificationSuccess?: (directLink?: string) => void;
   otpMethod: OTPMethod;
   setOtpMethod?: (method: OTPMethod) => void;
+  quiz_id: string;
 }
 
 export function OTPSection({
@@ -19,6 +21,7 @@ export function OTPSection({
   onVerificationSuccess,
   otpMethod,
   setOtpMethod,
+  quiz_id,
 }: OTPSectionProps) {
   const {
     otpContact,
@@ -33,7 +36,11 @@ export function OTPSection({
   } = useOTP(otpMethod as 'sms' | 'mail');
 
   const handleVerifyClick = async () => {
-    const result = await verifyOTP();
+    if (!quiz_id) {
+      toast.error('لم يتم العثور على معرف الاختبار');
+      return;
+    }
+    const result = await verifyOTP(quiz_id);
     if (result.success) {
       onVerificationSuccess?.(result.directLink);
     }
