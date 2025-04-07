@@ -21,19 +21,17 @@ import { URL } from '@/lib/constant';
 import { ChartBar, CheckCircle, ClipboardList, Trash } from 'lucide-react';
 import { Button } from './ui/button';
 
-const chartConfig = {
-  Group_A: { label: 'Group A', color: '#204fb4' },
-  Group_B: { label: 'Group B', color: '#60a5fa' },
-} satisfies ChartConfig;
-
-const Chartdata = [
-  { day: '01', month: '01', Group_A: 12, Group_B: 8 },
-  { day: '04', month: '01', Group_A: 21, Group_B: 20 },
-  { day: '08', month: '01', Group_A: 23, Group_B: 15 },
-  { day: '16', month: '01', Group_A: 13, Group_B: 25 },
-  { day: '30', month: '01', Group_A: 17, Group_B: 23 },
-  { day: '32', month: '01', Group_A: 19, Group_B: 16 },
-];
+const getChartConfig = (quizzes: Quiz[]) => {
+  const colors = ['#204fb4', '#3b82f6', '#60a5fa', '#5f84e9', '#145aaf'];
+  return quizzes.reduce((config, quiz, index) => {
+    const shortId = quiz.id.split('-')[0];
+    config[quiz.id] = {
+      label: `${shortId} محاولات ناجحة`,
+      color: colors[index % colors.length],
+    };
+    return config;
+  }, {} as ChartConfig);
+};
 
 type Quiz = {
   id: string;
@@ -51,46 +49,6 @@ type Quiz = {
   status: 'active' | 'active';
 };
 
-// const get_data = () => {
-//   // fetch data from the server
-//   // temp::
-//   const dummyData: QuizType[] = [
-//     {
-//       id: 'dgfhidwskcndbh',
-//       original_Link: 'https://www.google.com',
-//       secure_Link: 'https://securejoin.com/11',
-//       verification_methods: ['QUESTIONS', 'OTP'],
-//       otp_method: 'sms',
-//       attempts_log: [
-//         { date: '2021-10-01', attempts: 5, success_attempts: 2 },
-//         { date: '2021-10-02', attempts: 9, success_attempts: 4 },
-//         { date: '2021-10-03', attempts: 12, success_attempts: 3 },
-//         { date: '2021-10-04', attempts: 22, success_attempts: 6 },
-//         { date: '2021-10-05', attempts: 27, success_attempts: 5 },
-//       ],
-//       isActive: true,
-//     },
-//     {
-//       id: 'fehiwdksnc',
-//       original_Link: 'https://www.facebook.com',
-//       secure_Link: 'https://securejoin.com/12',
-//       verification_methods: ['QUESTIONS'],
-//       attempts_log: [
-//         { date: '2021-10-01', attempts: 5, success_attempts: 4 },
-//         { date: '2021-10-01', attempts: 12, success_attempts: 5 },
-//         { date: '2021-10-02', attempts: 14, success_attempts: 3 },
-//         { date: '2021-10-04', attempts: 19, success_attempts: 4 },
-//         { date: '2021-10-15', attempts: 27, success_attempts: 6 },
-//       ],
-//       isActive: true,
-//     },
-//   ];
-//   // format data for the chart
-//   // 1: get the dates & devide them into weeks
-//   // 2: get the attempts for each week
-//   // 3: return full config for the chart
-// };
-
 function Dashboard() {
   const { getToken } = useAuth();
   const [token, setToken] = useState('');
@@ -98,6 +56,8 @@ function Dashboard() {
   const [loadingQuizId, setLoadingQuizId] = useState<string | null>(null);
 
   const [expandedQuiz, setExpandedQuiz] = useState<string | null>(null);
+
+  const [isLoading, setIsLoading] = useState(true);
 
   const handleExpandClick = (id: string) => {
     setExpandedQuiz((prev) => (prev === id ? null : id)); // Toggle expansion
@@ -154,6 +114,7 @@ function Dashboard() {
     if (!token) return;
 
     async function fetchData() {
+      setIsLoading(true);
       try {
         const res = await fetch(`${URL}/get_user_quiz`, {
           method: 'POST',
@@ -164,7 +125,6 @@ function Dashboard() {
         });
 
         const data = await res.json();
-        console.log('fetching data: ', data.quiz);
         if (res.ok) {
           console.log('User quizzes:', data.quiz);
           setQuizzes(data.quiz);
@@ -173,10 +133,81 @@ function Dashboard() {
         }
       } catch (error) {
         console.error('Fetch error:', error);
+      } finally {
+        setIsLoading(false);
       }
     }
     fetchData();
   }, [token]);
+
+  const processChartData = (quizzes: Quiz[]) => {
+    let targetMonth: number | null = null;
+    let targetYear: number | null = null;
+
+    //date from the first log  entry
+    quizzes.forEach((quiz) => {
+      if (quiz.attempts_log && quiz.attempts_log.length > 0) {
+        const firstLogDate = new Date(quiz.attempts_log[0].date);
+        if (targetMonth === null) {
+          targetMonth = firstLogDate.getMonth();
+          targetYear = firstLogDate.getFullYear();
+        }
+      }
+    });
+
+    // If no data, use current month
+    if (targetMonth === null || targetYear === null) {
+      const now = new Date();
+      targetMonth = now.getMonth();
+      targetYear = now.getFullYear();
+    }
+
+    const daysInMonth = new Date(targetYear, targetMonth + 1, 0).getDate();
+
+    // Create array of all days in target month
+    const allDates = Array.from({ length: daysInMonth }, (_, i) => {
+      const day = (i + 1).toString().padStart(2, '0');
+      const month = ((targetMonth ?? 0) + 1).toString().padStart(2, '0');
+      return `${day}/${month}`;
+    });
+
+    type DataPoint = {
+      date: string;
+      [key: string]: number | string;
+    };
+
+    // init data w zeros
+    const chartData = allDates.map((date): DataPoint => {
+      const dataPoint: DataPoint = { date };
+      quizzes.forEach((quiz) => {
+        dataPoint[quiz.id] = 0;
+      });
+      return dataPoint;
+    });
+
+    // fill in actual data
+    quizzes.forEach((quiz) => {
+      if (!quiz.attempts_log) return;
+
+      quiz.attempts_log.forEach((log) => {
+        const logDate = new Date(log.date);
+
+        // Only process data from target month and year
+        if (
+          logDate.getMonth() === targetMonth &&
+          logDate.getFullYear() === targetYear
+        ) {
+          const dateKey = `${logDate.getDate().toString().padStart(2, '0')}/${(logDate.getMonth() + 1).toString().padStart(2, '0')}`;
+          const dataPoint = chartData.find((d) => d.date === dateKey);
+          if (dataPoint) {
+            dataPoint[quiz.id] = log.success_attempts;
+          }
+        }
+      });
+    });
+
+    return chartData;
+  };
 
   // grant access to the dashboard
   if (!token)
@@ -205,54 +236,77 @@ function Dashboard() {
         <Card className='w-full max-w-4xl overflow-hidden rounded-xl bg-card backdrop-blur-sm'>
           <CardHeader>
             <CardTitle className='text-2xl'>لمحة عامة</CardTitle>
-            <CardDescription>عمليات الدخول خلال الشهر الحالي</CardDescription>
+            <CardDescription>
+              المحاولات الناجحة خلال الشهر الحالي
+            </CardDescription>
           </CardHeader>
           <CardContent className='pe-0'>
-            <ChartContainer config={chartConfig} className='w-full'>
-              <LineChart data={Chartdata}>
-                <Legend
-                  verticalAlign='bottom'
-                  align='center'
-                  iconType='line'
-                  wrapperStyle={{ bottom: -10 }}
-                />
-                <CartesianGrid vertical={false} />
-                <XAxis
-                  dataKey='day'
-                  tickLine={false}
-                  axisLine={false}
-                  tickMargin={10}
-                  // skip count
-                  ticks={Chartdata.map((item) =>
-                    parseInt(item.day) % 2 ? item.day : '',
-                  )}
-                />
-                <YAxis
-                  tickLine={false}
-                  axisLine={false}
-                  tickMargin={20}
-                  tickCount={5}
-                />
-                <Line
-                  dataKey='Group_A'
-                  type='monotone'
-                  stroke={chartConfig.Group_A.color}
-                  strokeWidth={2}
-                  dot={false}
-                />
-                <Line
-                  dataKey='Group_B'
-                  type='monotone'
-                  stroke={chartConfig.Group_B.color}
-                  strokeWidth={2}
-                  dot={false}
-                />
-                <ChartTooltip
-                  content={<ChartTooltipContent />}
-                  cursor={false}
-                />
-              </LineChart>
-            </ChartContainer>
+            {isLoading ? (
+              <div className='flex h-[300px] items-center justify-center'>
+                <p>جاري التحميل...</p>
+              </div>
+            ) : quizzes.length === 0 ? (
+              <div className='flex h-[300px] items-center justify-center'>
+                <p>لا توجد بيانات متاحة</p>
+              </div>
+            ) : (
+              <>
+                <div className='hidden'>
+                  <pre>
+                    {JSON.stringify(
+                      quizzes.map((q) => ({
+                        id: q.id,
+                        attempts: q.attempts_log,
+                      })),
+                      null,
+                      2,
+                    )}
+                  </pre>
+                </div>
+                <ChartContainer
+                  config={getChartConfig(quizzes)}
+                  className='w-full'
+                >
+                  <LineChart data={processChartData(quizzes)}>
+                    <Legend
+                      verticalAlign='bottom'
+                      align='center'
+                      iconType='line'
+                      wrapperStyle={{ bottom: -10 }}
+                    />
+                    <CartesianGrid vertical={false} />
+                    <XAxis
+                      dataKey='date'
+                      tickLine={false}
+                      axisLine={false}
+                      tickMargin={10}
+                      interval={5}
+                    />
+                    <YAxis
+                      tickLine={false}
+                      axisLine={false}
+                      tickMargin={20}
+                      tickCount={5}
+                    />
+                    {quizzes.map((quiz) => (
+                      <Line
+                        key={quiz.id}
+                        dataKey={quiz.id}
+                        type='monotone'
+                        stroke={getChartConfig(quizzes)[quiz.id].color}
+                        strokeWidth={2}
+                        dot={false}
+                        name={quiz.id.split('-')[0]}
+                      />
+                    ))}
+                    <ChartTooltip
+                      content={<ChartTooltipContent />}
+                      cursor={false}
+                    />
+                  </LineChart>
+                </ChartContainer>
+              </>
+            )}
           </CardContent>
         </Card>
         {/*  */}
