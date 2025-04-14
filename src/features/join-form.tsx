@@ -213,15 +213,21 @@ export function JoinForm({
                 )}
 
                 {joinLink && (
-                  <Alert className='mt-4 bg-card px-12' dir='rtl'>
-                    <AlertCircle className='right-4 h-4 w-4 translate-y-1/2' />
-                    <AlertTitle>رابط الانضمام:</AlertTitle>
-                    <AlertDescription className='mt-2 flex w-full items-center justify-center bg-red-200 font-mono text-sm'>
-                      <Button variant={'link'} className='w-full' type='button'>
-                        {joinLink}
-                      </Button>
-                    </AlertDescription>
-                  </Alert>
+                  <div className='mt-4 flex flex-col items-center gap-2'>
+                    {/* <Label className='text-lg'>رابط الانضمام:</Label> */}
+                    <Button
+                      variant='outline'
+                      className='w-full max-w-md border-primary bg-background text-primary-foreground hover:bg-black/20'
+                      onClick={() => {
+                        console.log('Join link:', joinLink);
+                        if (joinLink) {
+                          window.open(joinLink, '_blank');
+                        }
+                      }}
+                    >
+                      اضغط هنا للانضمام للمجموعة
+                    </Button>
+                  </div>
                 )}
               </>
             )}
