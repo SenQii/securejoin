@@ -8,11 +8,10 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
-import { AlertCircle, Send, CheckCircle2 } from 'lucide-react';
+import { Send, CheckCircle2 } from 'lucide-react';
 import { OTPSection } from './otp-section';
 import { OTPMethod, QuizQuestion } from '@/lib/types';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { toast } from 'react-hot-toast';
 import { useEffect, useState } from 'react';
 
@@ -66,11 +65,6 @@ export function JoinForm({
       return;
     }
     await handleJoinGroup(e);
-  };
-
-  const handleOTPSuccess = (directLink?: string) => {
-    if (directLink) {
-    }
   };
 
   useEffect(() => {
@@ -197,7 +191,6 @@ export function JoinForm({
                 {(hasOTP || verificationMethod.includes('OTP')) && (
                   <OTPSection
                     mode='join'
-                    onVerificationSuccess={handleOTPSuccess}
                     otpMethod={otpMethod}
                     quiz_id={quiz_id}
                     setJoinLink={setJoinLink}

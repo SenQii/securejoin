@@ -19,7 +19,6 @@ interface OTPSectionProps {
 
 export function OTPSection({
   mode,
-  onVerificationSuccess,
   otpMethod,
   setJoinLink,
   setOtpMethod,
@@ -48,7 +47,6 @@ export function OTPSection({
     const result = await verifyOTP(quiz_id);
     if (result.success) {
       setJoinLink(result.directLink || '');
-      onVerificationSuccess?.(result.directLink);
     }
   };
 
