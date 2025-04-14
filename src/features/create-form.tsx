@@ -87,6 +87,7 @@ export function CreateForm({
                 otpMethod={otpMethod}
                 setOtpMethod={setOtpMethod}
                 mode='create'
+                setJoinLink={() => {}}
               />
             )}
           </div>

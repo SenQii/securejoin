@@ -8,16 +8,16 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
-import { AlertCircle, Send, CheckCircle2 } from 'lucide-react';
+import { Send, CheckCircle2 } from 'lucide-react';
 import { OTPSection } from './otp-section';
 import { OTPMethod, QuizQuestion } from '@/lib/types';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { toast } from 'react-hot-toast';
 import { useEffect, useState } from 'react';
 
 interface JoinFormProps {
   joinLink: string;
+  setJoinLink: (link: string) => void;
   joinurlRef: React.MutableRefObject<string>;
   quiz: QuizQuestion[];
   quizAnswers: string[];
@@ -31,11 +31,12 @@ interface JoinFormProps {
   setOtpContact: (contact: string) => void;
   isLinkVerified: boolean;
   setIsLinkVerified: (value: boolean) => void;
-  quiz_id?: string;
+  quiz_id: string;
 }
 
 export function JoinForm({
   joinLink,
+  setJoinLink,
   joinurlRef,
   quiz,
   quizAnswers,
@@ -66,11 +67,6 @@ export function JoinForm({
     await handleJoinGroup(e);
   };
 
-  const handleOTPSuccess = (directLink?: string) => {
-    if (directLink) {
-    }
-  };
-
   useEffect(() => {
     const fullURL = window.location.href; // get the full url
     const extras = window.location.pathname.substring(1); // get the path
@@ -79,15 +75,10 @@ export function JoinForm({
     if (!extras) return;
 
     if (fullURL) {
-      setSecureLink(fullURL);
-      handleJoin(fullURL);
+      setSecureLink(`https://securejoin.vercel.app/${extras}`);
+      joinurlRef.current = `https://securejoin.vercel.app/${extras}`;
     }
-  }, [location]);
-
-  const handleJoin = (fullURL: string) => {
-    console.log('Joining with:', fullURL);
-    // Fetch quiz data using the codename
-  };
+  }, []);
 
   return (
     <Card>
@@ -200,9 +191,9 @@ export function JoinForm({
                 {(hasOTP || verificationMethod.includes('OTP')) && (
                   <OTPSection
                     mode='join'
-                    onVerificationSuccess={handleOTPSuccess}
                     otpMethod={otpMethod}
                     quiz_id={quiz_id}
+                    setJoinLink={setJoinLink}
                   />
                 )}
 
@@ -215,15 +206,21 @@ export function JoinForm({
                 )}
 
                 {joinLink && (
-                  <Alert className='mt-4 bg-card px-12' dir='rtl'>
-                    <AlertCircle className='right-4 h-4 w-4 translate-y-1/2' />
-                    <AlertTitle>رابط الانضمام:</AlertTitle>
-                    <AlertDescription className='mt-2 flex w-full items-center justify-center bg-red-200 font-mono text-sm'>
-                      <Button variant={'link'} className='w-full' type='button'>
-                        {joinLink}
-                      </Button>
-                    </AlertDescription>
-                  </Alert>
+                  <div className='mt-4 flex flex-col items-center gap-2'>
+                    {/* <Label className='text-lg'>رابط الانضمام:</Label> */}
+                    <Button
+                      variant='outline'
+                      className='w-full max-w-md border-primary bg-background text-primary-foreground hover:bg-black/20'
+                      onClick={() => {
+                        console.log('Join link:', joinLink);
+                        if (joinLink) {
+                          window.open(joinLink, '_blank');
+                        }
+                      }}
+                    >
+                      اضغط هنا للانضمام للمجموعة
+                    </Button>
+                  </div>
                 )}
               </>
             )}
