@@ -198,7 +198,7 @@ export function JoinForm({
                 )}
 
                 {/* Show join button only when needed */}
-                {!joinLink && verificationMethod.includes('QUESTIONS') && (
+                {joinLink && verificationMethod.includes('QUESTIONS') && (
                   <Button type='submit' className='mt-6 w-full md:w-1/2'>
                     انضم للمجموعة
                     <Send className='mr-2 h-4 w-4' />
