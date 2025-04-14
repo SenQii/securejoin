@@ -18,6 +18,7 @@ import { useEffect, useState } from 'react';
 
 interface JoinFormProps {
   joinLink: string;
+  setJoinLink: (link: string) => void;
   joinurlRef: React.MutableRefObject<string>;
   quiz: QuizQuestion[];
   quizAnswers: string[];
@@ -31,11 +32,12 @@ interface JoinFormProps {
   setOtpContact: (contact: string) => void;
   isLinkVerified: boolean;
   setIsLinkVerified: (value: boolean) => void;
-  quiz_id?: string;
+  quiz_id: string;
 }
 
 export function JoinForm({
   joinLink,
+  setJoinLink,
   joinurlRef,
   quiz,
   quizAnswers,
@@ -79,15 +81,10 @@ export function JoinForm({
     if (!extras) return;
 
     if (fullURL) {
-      setSecureLink(fullURL);
-      handleJoin(fullURL);
+      setSecureLink(`https://securejoin.vercel.app/${extras}`);
+      joinurlRef.current = `https://securejoin.vercel.app/${extras}`;
     }
-  }, [location]);
-
-  const handleJoin = (fullURL: string) => {
-    console.log('Joining with:', fullURL);
-    // Fetch quiz data using the codename
-  };
+  }, []);
 
   return (
     <Card>
@@ -203,6 +200,7 @@ export function JoinForm({
                     onVerificationSuccess={handleOTPSuccess}
                     otpMethod={otpMethod}
                     quiz_id={quiz_id}
+                    setJoinLink={setJoinLink}
                   />
                 )}
 

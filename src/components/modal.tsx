@@ -34,6 +34,7 @@ export default function Modal({
   const { secureLink, createSecureLink } = useSecureLink(tokenRef);
   const {
     quiz,
+    quiz_id,
     quizAnswers,
     setQuizAnswers,
     checkAnswers,
@@ -42,6 +43,7 @@ export default function Modal({
     otpMethod,
     joinLink,
     setOtpMethod,
+    setJoinLink,
   } = useQuiz(tokenRef);
 
   const handleAddQuestion = () => {
@@ -154,6 +156,7 @@ export default function Modal({
         <TabsContent value='join'>
           <JoinForm
             joinLink={joinLink}
+            setJoinLink={setJoinLink}
             joinurlRef={joinurlRef}
             quiz={quiz}
             quizAnswers={quizAnswers}
@@ -167,7 +170,7 @@ export default function Modal({
             setOtpContact={setOtpContact}
             isLinkVerified={isLinkVerified}
             setIsLinkVerified={setIsLinkVerified}
-            quiz_id={quiz[0]?.id}
+            quiz_id={quiz_id}
           />
         </TabsContent>
       </Tabs>

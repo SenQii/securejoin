@@ -12,6 +12,7 @@ interface OTPSectionProps {
   mode: 'create' | 'join';
   onVerificationSuccess?: (directLink?: string) => void;
   otpMethod: OTPMethod;
+  setJoinLink: (link: string) => void;
   setOtpMethod?: (method: OTPMethod) => void;
   quiz_id?: string;
 }
@@ -20,6 +21,7 @@ export function OTPSection({
   mode,
   onVerificationSuccess,
   otpMethod,
+  setJoinLink,
   setOtpMethod,
   quiz_id,
 }: OTPSectionProps) {
@@ -36,12 +38,16 @@ export function OTPSection({
   } = useOTP(otpMethod as 'sms' | 'mail');
 
   const handleVerifyClick = async () => {
+    console.log('Verifying OTP:', otpCode);
+    console.log('Quiz ID:', quiz_id);
+
     if (!quiz_id) {
       toast.error('لم يتم العثور على معرف الاختبار');
       return;
     }
     const result = await verifyOTP(quiz_id);
     if (result.success) {
+      setJoinLink(result.directLink || '');
       onVerificationSuccess?.(result.directLink);
     }
   };

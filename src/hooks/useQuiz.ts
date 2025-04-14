@@ -11,6 +11,7 @@ export function useQuiz(tokenRef: React.MutableRefObject<string>) {
     undefined,
   );
   const [verificationMethods, setVerificationMethods] = useState<string[]>([]);
+  const [quiz_id, setQuizId] = useState<string>('');
 
   // onSubmit
   const checkAnswers = async (secureURL: string) => {
@@ -81,11 +82,13 @@ export function useQuiz(tokenRef: React.MutableRefObject<string>) {
       // CASE: OTP only
       if (data.message === 'OTP' || data.message === 'BOTH') {
         setOtpMethod(data.otp_method);
+        setQuizId(data.quiz_id);
       }
 
       // CASE: both
       if (data.message === 'BOTH' || data.message === 'Questions') {
         setQuiz(data.quiz);
+        setQuizId(data.quiz_id);
       }
 
       return true;
@@ -98,8 +101,10 @@ export function useQuiz(tokenRef: React.MutableRefObject<string>) {
 
   return {
     quiz,
+    quiz_id,
     quizAnswers,
     joinLink,
+    setJoinLink,
     setQuizAnswers,
     checkAnswers,
     getQuiz,
