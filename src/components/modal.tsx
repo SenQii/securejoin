@@ -1,6 +1,6 @@
 import React, { useRef, useState } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { AlertCircle } from 'lucide-react';
+import { AlertCircle, Copy } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { SignedIn } from '@clerk/clerk-react';
 import { QuizQuestion, VerificationMethod } from '@/lib/types';
@@ -8,6 +8,8 @@ import useSecureLink from '@/hooks/useSecureLink';
 import { useQuiz } from '@/hooks/useQuiz';
 import { CreateForm } from '@/features/create-form';
 import { JoinForm } from '@/features/join-form';
+import { Button } from '@/components/ui/button';
+import { toast } from 'react-hot-toast';
 
 export default function Modal({
   tokenRef,
@@ -145,6 +147,20 @@ export default function Modal({
             <Alert className='m-6 bg-card px-12' dir='rtl'>
               <AlertCircle className='right-4 h-4 w-4 translate-y-1/2' />
               <AlertTitle>أُنشئ رابط الانضمام:</AlertTitle>
+              <div className='my-4 flex justify-center'>
+                <Button
+                  variant='default'
+                  size='sm'
+                  className='flex items-center gap-2'
+                  onClick={() => {
+                    navigator.clipboard.writeText(secureLink);
+                    toast.success('تم نسخ الرابط بنجاح');
+                  }}
+                >
+                  <Copy className='h-4 w-4' />
+                  اضغط هنا لنسخ الرابط
+                </Button>
+              </div>
               <AlertDescription className='mt-2 break-all font-mono text-sm'>
                 {secureLink}
               </AlertDescription>
