@@ -65,12 +65,14 @@ export function JoinForm({
         }
         toast.success('تم التحقق من الرابط بنجاح');
         setIsLinkVerified(true);
+        return;
       } catch (e) {
         toast.error('حدث خطأ أثناء التحقق من الرابط');
         console.log('error in verifiyng: ', e);
       } finally {
         setIsVerifying(false);
       }
+      return;
     }
     try {
       await handleJoinGroup(e);

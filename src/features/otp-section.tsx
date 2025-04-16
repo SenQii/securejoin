@@ -198,6 +198,7 @@ function OTPInputs({
                   value={otpContact}
                   onChange={handlePhoneChange}
                   type='tel'
+                  autoComplete='tel'
                   className='w-full'
                   dir='ltr'
                   pattern='5[0-9]{8}'
@@ -213,7 +214,11 @@ function OTPInputs({
                 value={otpContact}
                 onChange={(e) => setOtpContact?.(e.target.value)}
                 type='email'
+                autoComplete='email'
+                dir='ltr'
+                pattern='[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}$'
                 className='w-full'
+                lang='ar'
               />
             )}
 
