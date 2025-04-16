@@ -8,7 +8,7 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
-import { Send, CheckCircle2 } from 'lucide-react';
+import { Send, CheckCircle2, Loader2 } from 'lucide-react';
 import { OTPSection } from './otp-section';
 import { OTPMethod, QuizQuestion } from '@/lib/types';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
@@ -51,20 +51,33 @@ export function JoinForm({
   quiz_id,
 }: JoinFormProps) {
   const [secureLink, setSecureLink] = useState('');
+  const [isVerifying, setIsVerifying] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!isLinkVerified) {
-      const valid_url = await handleVerifyLink();
-      if (!valid_url) {
-        toast.error('رابط غير صحيح، حاول مرة أخرى');
-        return;
+      setIsVerifying(true);
+      try {
+        const valid_url = await handleVerifyLink();
+        if (!valid_url) {
+          toast.error('رابط غير صحيح، حاول مرة أخرى');
+          return;
+        }
+        toast.success('تم التحقق من الرابط بنجاح');
+        setIsLinkVerified(true);
+      } catch (e) {
+        toast.error('حدث خطأ أثناء التحقق من الرابط');
+        console.log('error in verifiyng: ', e);
+      } finally {
+        setIsVerifying(false);
       }
-      toast.success('تم التحقق من الرابط بنجاح');
-      setIsLinkVerified(true);
-      return;
     }
-    await handleJoinGroup(e);
+    try {
+      await handleJoinGroup(e);
+    } catch (error) {
+      toast.error('حدث خطأ أثناء التحقق من الرابط');
+      console.log('error in submetting: ', error);
+    }
   };
 
   useEffect(() => {
@@ -74,9 +87,11 @@ export function JoinForm({
     //  if ther is no path, dont fill
     if (!extras) return;
 
+    const cleanedExtras = extras.trim();
     if (fullURL) {
-      setSecureLink(`https://securejoin.vercel.app/${extras}`);
-      joinurlRef.current = `https://securejoin.vercel.app/${extras}`;
+      const finalURL = `https://securejoin.vercel.app/${cleanedExtras}`;
+      setSecureLink(finalURL);
+      joinurlRef.current = finalURL;
     }
   }, []);
 
@@ -101,11 +116,12 @@ export function JoinForm({
                   placeholder='https://securejoin.vercel.app/xxxxx'
                   value={secureLink}
                   onChange={(e) => {
-                    setSecureLink(e.target.value);
-                    joinurlRef.current = e.target.value;
+                    const newV = e.target.value.trim();
+                    setSecureLink(newV);
+                    joinurlRef.current = newV;
                   }}
                   required
-                  disabled={isLinkVerified}
+                  disabled={isLinkVerified || isVerifying}
                   className='mt-1.5 w-full border-muted-foreground bg-input focus:border-primary md:w-1/2'
                 />
                 {joinurlRef.current && (
@@ -117,8 +133,19 @@ export function JoinForm({
                       : 'رابط غير صحيح، يجب أن بدأ الرابط بـ https://securejoin.vercel.app'}
                   </div>
                 )}
-                <Button type='submit' className='mt-6 w-full md:w-1/2'>
-                  تحقق من الرابط
+                <Button
+                  type='submit'
+                  className='mt-6 w-full md:w-1/2'
+                  disabled={isVerifying}
+                >
+                  {isVerifying ? (
+                    <>
+                      <Loader2 className='mr-2 h-4 w-4 animate-spin' />
+                      جاري التحقق...
+                    </>
+                  ) : (
+                    'تحقق من الرابط'
+                  )}
                 </Button>
               </div>
             )}
@@ -153,7 +180,7 @@ export function JoinForm({
                           value={quizAnswers[index] || ''}
                           onChange={(e) => {
                             const newAnswers = [...quizAnswers];
-                            newAnswers[index] = e.target.value;
+                            newAnswers[index] = e.target.value.trim();
                             setQuizAnswers(newAnswers);
                           }}
                           required
@@ -200,8 +227,7 @@ export function JoinForm({
                 {/* Show join button only when needed */}
                 {!joinLink && verificationMethod.includes('QUESTIONS') && (
                   <Button type='submit' className='mt-6 w-full md:w-1/2'>
-                    انضم للمجموعة
-                    <Send className='mr-2 h-4 w-4' />
+                    تحقق من الإجابات
                   </Button>
                 )}
 
@@ -209,16 +235,13 @@ export function JoinForm({
                   <div className='mt-4 flex flex-col items-center gap-2'>
                     {/* <Label className='text-lg'>رابط الانضمام:</Label> */}
                     <Button
-                      variant='outline'
-                      className='w-full max-w-md border-primary bg-background text-primary-foreground hover:bg-black/20'
-                      onClick={() => {
-                        console.log('Join link:', joinLink);
-                        if (joinLink) {
-                          window.open(joinLink, '_blank');
-                        }
-                      }}
+                      variant='default'
+                      className='mt-6 w-full md:w-1/2'
+                      onClick={() => window.open(joinLink, '_blank')}
+                      type='button'
                     >
-                      اضغط هنا للانضمام للمجموعة
+                      انضم للمجموعة
+                      <Send className='mr-2 h-4 w-4' />
                     </Button>
                   </div>
                 )}

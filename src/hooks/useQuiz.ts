@@ -40,6 +40,12 @@ export function useQuiz(tokenRef: React.MutableRefObject<string>) {
         return false;
       }
 
+      if (!data.direct_link || data.direct_link.trim() === '') {
+        console.error('Invalid direct_link in response:', data);
+        toast.error('حدث خطأ أثناء الحصول على رابط المجموعة');
+        return false;
+      }
+
       toast.success('اجابتك صحيحة، اضغط الرابط أسفل الصفحة للانضمام');
       setJoinLink(data.direct_link);
       return true;
