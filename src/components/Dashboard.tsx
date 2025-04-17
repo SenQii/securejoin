@@ -141,34 +141,20 @@ function Dashboard() {
   }, [token]);
 
   const processChartData = (quizzes: Quiz[]) => {
-    let targetMonth: number | null = null;
-    let targetYear: number | null = null;
+    const now = new Date();
+    const startDate = new Date();
+    startDate.setDate(now.getDate() - 29); //last 30Day
 
-    //date from the first log  entry
-    quizzes.forEach((quiz) => {
-      if (quiz.attempts_log && quiz.attempts_log.length > 0) {
-        const firstLogDate = new Date(quiz.attempts_log[0].date);
-        if (targetMonth === null) {
-          targetMonth = firstLogDate.getMonth();
-          targetYear = firstLogDate.getFullYear();
-        }
-      }
-    });
-
-    // If no data, use current month
-    if (targetMonth === null || targetYear === null) {
-      const now = new Date();
-      targetMonth = now.getMonth();
-      targetYear = now.getFullYear();
-    }
-
-    const daysInMonth = new Date(targetYear, targetMonth + 1, 0).getDate();
+    const formatDateKey = (date: Date) =>
+      `${date.getDate().toString().padStart(2, '0')}/${(date.getMonth() + 1)
+        .toString()
+        .padStart(2, '0')}`;
 
     // Create array of all days in target month
-    const allDates = Array.from({ length: daysInMonth }, (_, i) => {
-      const day = (i + 1).toString().padStart(2, '0');
-      const month = ((targetMonth ?? 0) + 1).toString().padStart(2, '0');
-      return `${day}/${month}`;
+    const allDates: string[] = Array.from({ length: 30 }, (_, i) => {
+      const date = new Date(startDate);
+      date.setDate(date.getDate() + i);
+      return formatDateKey(date);
     });
 
     type DataPoint = {
@@ -177,7 +163,7 @@ function Dashboard() {
     };
 
     // init data w zeros
-    const chartData = allDates.map((date): DataPoint => {
+    const chartData: DataPoint[] = allDates.map((date) => {
       const dataPoint: DataPoint = { date };
       quizzes.forEach((quiz) => {
         dataPoint[quiz.id] = 0;
@@ -193,14 +179,12 @@ function Dashboard() {
         const logDate = new Date(log.date);
 
         // Only process data from target month and year
-        if (
-          logDate.getMonth() === targetMonth &&
-          logDate.getFullYear() === targetYear
-        ) {
-          const dateKey = `${logDate.getDate().toString().padStart(2, '0')}/${(logDate.getMonth() + 1).toString().padStart(2, '0')}`;
+        if (logDate >= startDate && logDate <= now) {
+          const dateKey = formatDateKey(logDate);
           const dataPoint = chartData.find((d) => d.date === dateKey);
           if (dataPoint) {
-            dataPoint[quiz.id] = log.success_attempts;
+            dataPoint[quiz.id] =
+              (dataPoint[quiz.id] as number) + log.success_attempts;
           }
         }
       });
@@ -237,7 +221,7 @@ function Dashboard() {
           <CardHeader>
             <CardTitle className='text-2xl'>لمحة عامة</CardTitle>
             <CardDescription>
-              المحاولات الناجحة خلال الشهر الحالي
+              المحاولات الناجحة خلال آخر 30 يومًا
             </CardDescription>
           </CardHeader>
           <CardContent className='pe-0'>
