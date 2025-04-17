@@ -6,7 +6,6 @@ import { Button } from '@/components/ui/button';
 import { useOTP } from '@/hooks/useOTP';
 import { OTPMethod } from '@/lib/types';
 import { useRef } from 'react';
-import { toast } from 'react-hot-toast';
 
 interface OTPSectionProps {
   mode: 'create' | 'join';
@@ -25,8 +24,6 @@ export function OTPSection({
   quiz_id,
 }: OTPSectionProps) {
   const {
-    otpContact,
-    setOtpContact,
     showOtpInput,
     isContactInputVisible,
     otpCode,
@@ -34,19 +31,15 @@ export function OTPSection({
     isVerified,
     handleSendOTP,
     verifyOTP,
+    otpContact,
+    setOtpContact,
   } = useOTP(otpMethod as 'sms' | 'mail');
 
   const handleVerifyClick = async () => {
-    console.log('Verifying OTP:', otpCode);
-    console.log('Quiz ID:', quiz_id);
-
-    if (!quiz_id) {
-      toast.error('لم يتم العثور على معرف الاختبار');
-      return;
-    }
+    if (!quiz_id) return;
     const result = await verifyOTP(quiz_id);
-    if (result.success) {
-      setJoinLink(result.directLink || '');
+    if (result.success && result.directLink) {
+      setJoinLink(result.directLink);
     }
   };
 
@@ -198,6 +191,7 @@ function OTPInputs({
                   value={otpContact}
                   onChange={handlePhoneChange}
                   type='tel'
+                  autoComplete='tel'
                   className='w-full'
                   dir='ltr'
                   pattern='5[0-9]{8}'
@@ -213,7 +207,11 @@ function OTPInputs({
                 value={otpContact}
                 onChange={(e) => setOtpContact?.(e.target.value)}
                 type='email'
+                autoComplete='email'
+                dir='ltr'
+                pattern='[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}$'
                 className='w-full'
+                lang='ar'
               />
             )}
 

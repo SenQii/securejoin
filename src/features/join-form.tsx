@@ -8,12 +8,14 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
-import { Send, CheckCircle2, Loader2 } from 'lucide-react';
+import { Send, Loader2 } from 'lucide-react';
 import { OTPSection } from './otp-section';
 import { OTPMethod, QuizQuestion } from '@/lib/types';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { toast } from 'react-hot-toast';
 import { useEffect, useState } from 'react';
+import { AttemptManager } from '@/lib/attempt-manager';
+import { useID } from '@/hooks/useID';
 
 interface JoinFormProps {
   joinLink: string;
@@ -22,13 +24,11 @@ interface JoinFormProps {
   quiz: QuizQuestion[];
   quizAnswers: string[];
   setQuizAnswers: (answers: string[]) => void;
-  handleJoinGroup: (e: React.FormEvent<HTMLFormElement>) => Promise<void>;
+  handleJoinGroup: (e: React.FormEvent<HTMLFormElement>) => Promise<boolean>;
   hasOTP: boolean;
   handleVerifyLink: () => Promise<boolean>;
   verificationMethod: string[];
   otpMethod: OTPMethod;
-  otpContact: string;
-  setOtpContact: (contact: string) => void;
   isLinkVerified: boolean;
   setIsLinkVerified: (value: boolean) => void;
   quiz_id: string;
@@ -52,31 +52,78 @@ export function JoinForm({
 }: JoinFormProps) {
   const [secureLink, setSecureLink] = useState('');
   const [isVerifying, setIsVerifying] = useState(false);
+  const [remainingAttempts, setRemainingAttempts] = useState<number | null>(
+    null,
+  );
+  const ip = useID();
+
+  useEffect(() => {
+    const checkRateLimit = () => {
+      if (ip) {
+        const attempts = AttemptManager.getRemainingAttempts(ip);
+        setRemainingAttempts(attempts);
+      }
+    };
+    checkRateLimit();
+    const interval = setInterval(checkRateLimit, 1000);
+    return () => clearInterval(interval);
+  }, [ip]);
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+
+    if (!ip) {
+      toast.error('جاري تحميل النظام...');
+      return;
+    }
+
+    const isBanned = AttemptManager.isBanned(ip);
+    if (isBanned) {
+      const banData = AttemptManager.getBanInfo(ip);
+      toast.error(`تم حظرك من النظام لمدة ${banData?.remainingHours} ساعة`);
+      return;
+    }
+
     if (!isLinkVerified) {
       setIsVerifying(true);
       try {
         const valid_url = await handleVerifyLink();
         if (!valid_url) {
+          AttemptManager.recordAttempt(ip);
+          const attempts = AttemptManager.getRemainingAttempts(ip);
+          setRemainingAttempts(attempts);
           toast.error('رابط غير صحيح، حاول مرة أخرى');
           return;
         }
         toast.success('تم التحقق من الرابط بنجاح');
         setIsLinkVerified(true);
+        return;
       } catch (e) {
+        AttemptManager.recordAttempt(ip);
+        const attempts = AttemptManager.getRemainingAttempts(ip);
+        setRemainingAttempts(attempts);
         toast.error('حدث خطأ أثناء التحقق من الرابط');
-        console.log('error in verifiyng: ', e);
+        console.log('error in verifying: ', e);
       } finally {
         setIsVerifying(false);
       }
+      return;
     }
+
     try {
-      await handleJoinGroup(e);
+      const userPassed = await handleJoinGroup(e);
+
+      if (!userPassed) {
+        AttemptManager.recordAttempt(ip);
+        const attempts = AttemptManager.getRemainingAttempts(ip);
+        setRemainingAttempts(attempts);
+      }
     } catch (error) {
+      AttemptManager.recordAttempt(ip);
+      const attempts = AttemptManager.getRemainingAttempts(ip);
+      setRemainingAttempts(attempts);
       toast.error('حدث خطأ أثناء التحقق من الرابط');
-      console.log('error in submetting: ', error);
+      console.log('error in submitting: ', error);
     }
   };
 
@@ -100,7 +147,25 @@ export function JoinForm({
       <CardHeader>
         <CardTitle className='text-2xl'>ادخل مجموعة بامان</CardTitle>
         <CardDescription>
-          ادخل رابط الانضمام الآمن للانضمام للمجموعة
+          {isLinkVerified && remainingAttempts !== null ? (
+            <div
+              className='mt-2 text-sm text-muted-foreground'
+              style={AttemptManager.isBanned(ip) ? { color: 'red' } : {}}
+            >
+              عدد المحاولات المتبقية: {remainingAttempts}
+            </div>
+          ) : (
+            'ادخل رابط الانضمام الآمن للانضمام للمجموعة'
+          )}
+          {AttemptManager.isBanned(ip) && (
+            <div
+              className='mt-2 text-sm text-muted-foreground'
+              style={AttemptManager.isBanned(ip) ? { color: 'red' } : {}}
+            >
+              متبقي على نهاية الحظر{' '}
+              {AttemptManager.getBanInfo(ip)?.remainingHours} ساعة
+            </div>
+          )}
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -150,70 +215,38 @@ export function JoinForm({
               </div>
             )}
 
-            {isLinkVerified && (
+            {isLinkVerified && quiz && (
               <>
-                {/* Success Message */}
-                <div className='flex flex-col items-center justify-center space-y-4 rounded-lg border border-green-200 bg-green-50 p-6'>
-                  <CheckCircle2 className='h-12 w-12 text-green-500' />
-                  <p className='text-center text-lg font-medium text-green-700'>
-                    تم التحقق من الرابط بنجاح
-                  </p>
-                </div>
-
-                {/* Verification Methods */}
-                {(verificationMethod.includes('QUESTIONS') ||
-                  verificationMethod.includes('BOTH')) &&
-                  quiz.length > 0 &&
-                  quiz.map((q, index) => (
-                    <div
-                      key={index}
-                      className='flex flex-col gap-2 rounded-lg border p-4'
-                    >
-                      <Label htmlFor='quizAnswer' className='text-lg font-bold'>
-                        {q.question}
-                      </Label>
-
-                      {q.questionType === 'text' ? (
-                        <Input
-                          id='quizAnswer'
-                          placeholder='ادخل الجواب'
-                          value={quizAnswers[index] || ''}
-                          onChange={(e) => {
-                            const newAnswers = [...quizAnswers];
-                            newAnswers[index] = e.target.value.trim();
-                            setQuizAnswers(newAnswers);
-                          }}
-                          required
-                          className='mt-1.5 w-1/2 border-border bg-input focus:border-primary'
-                        />
-                      ) : (
-                        <RadioGroup
-                          value={quizAnswers[index] || ''}
-                          onValueChange={(value) => {
-                            const newAnswers = [...quizAnswers];
-                            newAnswers[index] = value;
-                            setQuizAnswers(newAnswers);
-                          }}
-                          className='flex flex-col gap-2'
-                        >
-                          {q.options?.map((option, optionIndex) => (
-                            <div
-                              key={optionIndex}
-                              className='flex items-center gap-2'
-                            >
-                              <RadioGroupItem
-                                value={option.label}
-                                id={`q${index}-opt${optionIndex}`}
-                              />
-                              <Label htmlFor={`q${index}-opt${optionIndex}`}>
-                                {option.label}
-                              </Label>
-                            </div>
-                          ))}
-                        </RadioGroup>
-                      )}
-                    </div>
-                  ))}
+                {quiz.map((question, index) => (
+                  <div key={index} className='space-y-2'>
+                    <Label>{question.question}</Label>
+                    {question.options && (
+                      <RadioGroup
+                        value={quizAnswers[index] || ''}
+                        onValueChange={(value) => {
+                          const newAnswers = [...quizAnswers];
+                          newAnswers[index] = value;
+                          setQuizAnswers(newAnswers);
+                        }}
+                      >
+                        {question.options.map((option, optionIndex) => (
+                          <div
+                            key={optionIndex}
+                            className='flex items-center space-x-2'
+                          >
+                            <RadioGroupItem
+                              value={option.label}
+                              id={`q${index}-opt${optionIndex}`}
+                            />
+                            <Label htmlFor={`q${index}-opt${optionIndex}`}>
+                              {option.label}
+                            </Label>
+                          </div>
+                        ))}
+                      </RadioGroup>
+                    )}
+                  </div>
+                ))}
 
                 {(hasOTP || verificationMethod.includes('OTP')) && (
                   <OTPSection
@@ -224,7 +257,6 @@ export function JoinForm({
                   />
                 )}
 
-                {/* Show join button only when needed */}
                 {!joinLink && verificationMethod.includes('QUESTIONS') && (
                   <Button type='submit' className='mt-6 w-full md:w-1/2'>
                     تحقق من الإجابات
@@ -233,7 +265,6 @@ export function JoinForm({
 
                 {joinLink && (
                   <div className='mt-4 flex flex-col items-center gap-2'>
-                    {/* <Label className='text-lg'>رابط الانضمام:</Label> */}
                     <Button
                       variant='default'
                       className='mt-6 w-full md:w-1/2'

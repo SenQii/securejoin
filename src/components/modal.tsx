@@ -23,7 +23,6 @@ export default function Modal({
   ]);
   const [verificationMethod, setVerificationMethod] =
     useState<VerificationMethod>('questions');
-  const [otpContact, setOtpContact] = useState('');
   const [isLinkVerified, setIsLinkVerified] = useState(false);
 
   const groupUrlRef = useRef(''); // direct url
@@ -96,7 +95,7 @@ export default function Modal({
     if (verificationMethod == 'otp' || verificationMethod == 'both') {
       // TODO: Implement OTP verification
     }
-    await checkAnswers(joinurlRef.current);
+    return await checkAnswers(joinurlRef.current);
   };
 
   const handleVerifyLink = async (): Promise<boolean> => {
@@ -182,8 +181,6 @@ export default function Modal({
             verificationMethod={verificationMethods}
             hasOTP={OTPref.current}
             otpMethod={otpMethod}
-            otpContact={otpContact}
-            setOtpContact={setOtpContact}
             isLinkVerified={isLinkVerified}
             setIsLinkVerified={setIsLinkVerified}
             quiz_id={quiz_id}
