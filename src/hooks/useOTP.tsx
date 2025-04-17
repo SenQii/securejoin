@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import toast from 'react-hot-toast';
 import { URL } from '@/lib/constant';
+import { AttemptManager } from '@/lib/attempt-manager';
+import { useID } from '@/hooks/useID';
 
 export function useOTP(method: 'sms' | 'mail') {
   const [otpContact, setOtpContact] = useState('');
@@ -8,9 +10,13 @@ export function useOTP(method: 'sms' | 'mail') {
   const [isContactInputVisible, setIsContactInputVisible] = useState(true);
   const [otpCode, setOtpCode] = useState('');
   const [isVerified, setIsVerified] = useState(false);
+  const user_id = useID();
 
   const handleSendOTP = async () => {
     try {
+      const isBanned = AttemptManager.isBanned(user_id);
+      if (isBanned) return;
+
       const contact = method === 'sms' ? `+966${otpContact}` : otpContact;
       const response = await fetch(`${URL}/send_otp`, {
         method: 'POST',
@@ -21,7 +27,12 @@ export function useOTP(method: 'sms' | 'mail') {
       });
       if (!response.ok) {
         if (response.status === 403) {
-          toast.error('تم حظر الرقم عن استخدام الخدمة');
+          AttemptManager.recordAttempt(user_id);
+          toast.error('لا يمكن استخدام هذا الرقم');
+        }
+        if (response.status === 429) {
+          AttemptManager.recordAttempt(user_id);
+          toast.error('بلغت الحد الأقصى لطلبات التحقق');
         }
         throw new Error(`Server error: ${response.status}`);
       }
@@ -32,6 +43,7 @@ export function useOTP(method: 'sms' | 'mail') {
         setShowOtpInput(true);
         setIsContactInputVisible(false);
       } else {
+        AttemptManager.recordAttempt(user_id);
         toast.error('فشل في إرسال رمز التحقق');
       }
     } catch (error) {
@@ -45,8 +57,12 @@ export function useOTP(method: 'sms' | 'mail') {
   ): Promise<{
     success: boolean;
     directLink?: string;
+    remainingAttempts?: number;
   }> => {
     try {
+      const isBanned = AttemptManager.isBanned(user_id);
+      if (isBanned) return { success: false };
+
       const response = await fetch(`${URL}/verify_otp`, {
         method: 'POST',
         headers: {
@@ -70,8 +86,10 @@ export function useOTP(method: 'sms' | 'mail') {
         return { success: true, directLink: data.direct_link };
       }
 
+      AttemptManager.recordAttempt(user_id);
+      const remainingAttempts = AttemptManager.getRemainingAttempts(user_id);
       toast.error('رمز التحقق غير صحيح');
-      return { success: false };
+      return { success: false, remainingAttempts };
     } catch (error) {
       console.error('Error verifying OTP:', error);
       toast.error('حدث خطأ أثناء التحقق من الرمز');
