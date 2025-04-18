@@ -5,7 +5,7 @@ import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { useOTP } from '@/hooks/useOTP';
 import { OTPMethod } from '@/lib/types';
-import { useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 interface OTPSectionProps {
   mode: 'create' | 'join';
@@ -142,6 +142,28 @@ function OTPInputs({
   onSendOTP,
   onVerifyOTP,
 }: OTPInputsProps) {
+  const [resendDisabled, setResendDisabled] = useState(false);
+  const [timer, setTimer] = useState(60);
+
+  useEffect(() => {
+    let interval: NodeJS.Timeout | null = null;
+    if (resendDisabled) {
+      interval = setInterval(() => {
+        setTimer((prev: number) => {
+          if (prev <= 1) {
+            clearInterval(interval!);
+            setResendDisabled(false);
+            return 60; // Reset timer for next resend
+          }
+          return prev - 1;
+        });
+      }, 1000);
+    }
+    return () => {
+      if (interval) clearInterval(interval);
+    };
+  }, [resendDisabled]);
+
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
   const handleChange = (index: number, value: string) => {
     if (!/^\d*$/.test(value)) return;
@@ -219,7 +241,11 @@ function OTPInputs({
               type='button'
               variant='outline'
               className='w-full'
-              onClick={onSendOTP}
+              onClick={() => {
+                onSendOTP();
+                setResendDisabled(true);
+                setTimer(60);
+              }}
               disabled={
                 otpMethod === 'sms' &&
                 (!otpContact || !/^5\d{8}$/.test(otpContact))
@@ -234,7 +260,7 @@ function OTPInputs({
       {showOtpInput && (
         <div className='space-y-4'>
           <Label>رمز التحقق</Label>
-          <div className='flex justify-center gap-2'>
+          <div className='flex justify-center gap-2' dir='ltr'>
             {Array.from({ length: 6 }).map((_, index) => (
               <input
                 key={index}
@@ -258,6 +284,20 @@ function OTPInputs({
             onClick={onVerifyOTP}
           >
             تحقق من الرمز
+          </Button>
+          <Button
+            type='button'
+            className='w-full md:w-auto'
+            onClick={() => {
+              onSendOTP();
+              setResendDisabled(true);
+              setTimer(60); // blocked for 60s
+            }}
+            disabled={resendDisabled}
+          >
+            {resendDisabled
+              ? `إعادة الإرسال بعد ${timer} ثانية`
+              : 'إعادة إرسال رمز التحقق'}
           </Button>
         </div>
       )}

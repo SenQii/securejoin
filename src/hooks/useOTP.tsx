@@ -17,7 +17,7 @@ export function useOTP(method: 'sms' | 'mail') {
       const isBanned = AttemptManager.isBanned(user_id);
       if (isBanned) return;
 
-      const contact = method === 'sms' ? `+966${otpContact}` : otpContact;
+      const contact = method === 'sms' ? `966${otpContact}` : otpContact;
       const response = await fetch(`${URL}/send_otp`, {
         method: 'POST',
         headers: {
