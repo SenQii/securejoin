@@ -24,6 +24,7 @@ export default function Modal({
   const [verificationMethod, setVerificationMethod] =
     useState<VerificationMethod>('questions');
   const [isLinkVerified, setIsLinkVerified] = useState(false);
+  const [isOtpVerified, setIsOtpVerified] = useState(false);
 
   const groupUrlRef = useRef(''); // direct url
   const joinurlRef = useRef('');
@@ -92,9 +93,24 @@ export default function Modal({
   // join via secureLink
   const handleJoinGroup = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    if (verificationMethod == 'otp' || verificationMethod == 'both') {
-      // TODO: Implement OTP verification
+
+    // if OTP verified
+    if (verificationMethods.includes('OTP') && !isOtpVerified) {
+      toast.error('يجب التحقق من رمز التحقق أولاً');
+      return false;
     }
+
+    // if all are answered
+    if (verificationMethods.includes('QUESTIONS') && quiz && quiz.length > 0) {
+      const allAnswered =
+        quizAnswers.length === quiz.length &&
+        quizAnswers.every((answer) => answer && answer.trim() !== '');
+      if (!allAnswered) {
+        toast.error('يجب الإجابة على جميع الأسئلة');
+        return false;
+      }
+    }
+
     return await checkAnswers(joinurlRef.current);
   };
 
@@ -184,6 +200,8 @@ export default function Modal({
             isLinkVerified={isLinkVerified}
             setIsLinkVerified={setIsLinkVerified}
             quiz_id={quiz_id}
+            isOtpVerified={isOtpVerified}
+            setIsOtpVerified={setIsOtpVerified}
           />
         </TabsContent>
       </Tabs>

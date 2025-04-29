@@ -12,6 +12,7 @@ interface OTPSectionProps {
   onVerificationSuccess?: (directLink?: string) => void;
   otpMethod: OTPMethod;
   setJoinLink: (link: string) => void;
+  onlyOTP?: boolean;
   setOtpMethod?: (method: OTPMethod) => void;
   quiz_id?: string;
 }
@@ -22,6 +23,8 @@ export function OTPSection({
   setJoinLink,
   setOtpMethod,
   quiz_id,
+  onlyOTP = true,
+  onVerificationSuccess,
 }: OTPSectionProps) {
   const {
     showOtpInput,
@@ -38,14 +41,23 @@ export function OTPSection({
   const handleVerifyClick = async () => {
     if (!quiz_id) return;
     const result = await verifyOTP(quiz_id);
-    if (result.success && result.directLink) {
-      setJoinLink(result.directLink);
+
+    if (result.success) {
+      if (onVerificationSuccess) {
+        onVerificationSuccess(result.directLink);
+      }
+
+      if (result.directLink && onlyOTP) {
+        setJoinLink(result.directLink);
+      }
     }
+
+    return result;
   };
 
   if (isVerified) {
     return (
-      <div className='flex flex-col items-center justify-center space-y-4 rounded-lg border border-green-200 bg-green-50 p-6'>
+      <div className='otp-section flex flex-col items-center justify-center space-y-4 rounded-lg border border-green-200 bg-green-50 p-6'>
         <CheckCircle2 className='h-12 w-12 text-green-500' />
         <p className='text-center text-lg font-medium text-green-700'>
           تم التحقق من رمز التحقق بنجاح
@@ -59,7 +71,7 @@ export function OTPSection({
   }
 
   return (
-    <div className='space-y-8 rounded-lg border p-3'>
+    <div className='otp-section space-y-8 rounded-lg border p-3'>
       <OTPHeader otpMethod={otpMethod} />
       <OTPInputs
         otpMethod={otpMethod}

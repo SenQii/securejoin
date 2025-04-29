@@ -32,6 +32,8 @@ interface JoinFormProps {
   isLinkVerified: boolean;
   setIsLinkVerified: (value: boolean) => void;
   quiz_id: string;
+  isOtpVerified: boolean;
+  setIsOtpVerified: (value: boolean) => void;
 }
 
 export function JoinForm({
@@ -49,6 +51,8 @@ export function JoinForm({
   isLinkVerified,
   setIsLinkVerified,
   quiz_id,
+  isOtpVerified,
+  setIsOtpVerified,
 }: JoinFormProps) {
   const [secureLink, setSecureLink] = useState('');
   const [isVerifying, setIsVerifying] = useState(false);
@@ -254,12 +258,27 @@ export function JoinForm({
                     otpMethod={otpMethod}
                     quiz_id={quiz_id}
                     setJoinLink={setJoinLink}
+                    onlyOTP={
+                      verificationMethod.includes('OTP') &&
+                      !verificationMethod.includes('QUESTIONS')
+                    }
+                    onVerificationSuccess={() => setIsOtpVerified(true)}
                   />
                 )}
 
                 {!joinLink && verificationMethod.includes('QUESTIONS') && (
-                  <Button type='submit' className='mt-6 w-full md:w-1/2'>
-                    تحقق من الإجابات
+                  <Button
+                    type='submit'
+                    className='mt-6 w-full md:w-1/2'
+                    disabled={
+                      verificationMethod.includes('OTP') && !isOtpVerified
+                    }
+                  >
+                    {verificationMethod.includes('OTP')
+                      ? isOtpVerified
+                        ? 'تحقق من الإجابات'
+                        : 'يرجى التحقق من رمز التحقق أولاً'
+                      : 'تحقق من الإجابات'}
                   </Button>
                 )}
 
