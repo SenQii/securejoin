@@ -224,7 +224,7 @@ export function JoinForm({
                 {quiz.map((question, index) => (
                   <div key={index} className='space-y-2'>
                     <Label>{question.question}</Label>
-                    {question.questionType === 'mcq' ? (
+                    {question.questionType === 'mcq' && question.options ? (
                       <RadioGroup
                         value={quizAnswers[index] || ''}
                         onValueChange={(value) => {
