@@ -224,7 +224,7 @@ export function JoinForm({
                 {quiz.map((question, index) => (
                   <div key={index} className='space-y-2'>
                     <Label>{question.question}</Label>
-                    {question.options && (
+                    {question.questionType === 'mcq' && question.options ? (
                       <RadioGroup
                         value={quizAnswers[index] || ''}
                         onValueChange={(value) => {
@@ -248,6 +248,15 @@ export function JoinForm({
                           </div>
                         ))}
                       </RadioGroup>
+                    ) : (
+                      <Input
+                        value={quizAnswers[index] || ''}
+                        onChange={(e) => {
+                          const newAnswers = [...quizAnswers];
+                          newAnswers[index] = e.target.value;
+                          setQuizAnswers(newAnswers);
+                        }}
+                      />
                     )}
                   </div>
                 ))}
