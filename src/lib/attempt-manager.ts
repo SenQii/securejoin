@@ -32,8 +32,8 @@ export class AttemptManager {
     const now = Date.now();
 
     if (data.bannedUntil && now < data.bannedUntil) {
-      // const hoursLeft = Math.ceil((data.bannedUntil - now) / (60 * 60 * 1000));
-      // toast.error(`تم حظرك من النظام لمدة ${hoursLeft} ساعة`);
+      const hoursLeft = Math.ceil((data.bannedUntil - now) / (60 * 60 * 1000));
+      toast.error(`تم حظرك من النظام لمدة ${hoursLeft} ساعة`);
       return true;
     }
 
