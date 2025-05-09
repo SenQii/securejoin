@@ -18,8 +18,15 @@ import {
 import { type ChartConfig } from '@/components/ui/chart';
 import { useEffect, useState } from 'react';
 import { URL } from '@/lib/constant';
-import { ChartBar, CheckCircle, ClipboardList, Trash } from 'lucide-react';
+import {
+  ChartBar,
+  CheckCircle,
+  CircleXIcon,
+  ClipboardList,
+  Trash,
+} from 'lucide-react';
 import { Button } from './ui/button';
+import toast from 'react-hot-toast';
 
 const getChartConfig = (quizzes: Quiz[]) => {
   const colors = ['#204fb4', '#3b82f6', '#60a5fa', '#5f84e9', '#145aaf'];
@@ -46,7 +53,7 @@ type Quiz = {
     attempts: number;
     success_attempts: number;
   }[];
-  status: 'active' | 'active';
+  status: 'active' | 'inactive';
 };
 
 function Dashboard() {
@@ -92,6 +99,48 @@ function Dashboard() {
       alert('حدث خطأ أثناء الحذف، حاول مرة أخرى.');
     } finally {
       setLoadingQuizId(null);
+    }
+  };
+
+  const handleToggleQuizStatus = async (
+    id: string,
+    status: 'activate' | 'deactivate',
+  ) => {
+    // APT
+
+    console.log('Toggling quiz status:', id, status);
+
+    try {
+      const response = await fetch(`${URL}/toggle_quiz_status`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'access-token': `Bearer ${token}`,
+        },
+        body: JSON.stringify({ quiz_id: id, status }),
+      });
+
+      // check res
+      if (!response.ok) {
+        console.error('Failed to toggle quiz status:', response.statusText);
+        toast.error('حدث خطأ أثناء تغيير الحالة، حاول مرة أخرى.');
+        return;
+      }
+
+      // update
+      setQuizzes((prevQuizzes) =>
+        prevQuizzes.map((quiz) =>
+          quiz.id === id
+            ? {
+                ...quiz,
+                status: quiz.status === 'active' ? 'inactive' : 'active',
+              }
+            : quiz,
+        ),
+      );
+      toast.success('تم تغيير الحالة بنجاح');
+    } catch (error) {
+      console.error('Failed to toggle quiz status:', error);
     }
   };
 
@@ -329,7 +378,14 @@ function Dashboard() {
         <CardContent className='flex flex-col items-center gap-4 overflow-hidden md:grid md:grid-cols-2'>
           {quizzes.length > 0 ? (
             quizzes.map(
-              ({ id, original_url, url, attempts_log, lastAttemptAt }) => {
+              ({
+                id,
+                original_url,
+                url,
+                attempts_log,
+                lastAttemptAt,
+                status,
+              }) => {
                 const totalAttempts = attempts_log?.length
                   ? attempts_log[attempts_log.length - 1].attempts
                   : 0;
@@ -371,7 +427,11 @@ function Dashboard() {
                           <span>{totalAttempts}</span>
                         </div>
                         <div className='flex items-center gap-1 text-xs text-muted-foreground'>
-                          <CheckCircle className='h-3 w-3 text-green-500' />
+                          {status === 'inactive' ? (
+                            <CircleXIcon className='h-3 w-3 text-red-500' />
+                          ) : (
+                            <CheckCircle className='h-3 w-3 text-green-500' />
+                          )}
                         </div>
                       </div>
                     </div>
@@ -406,6 +466,7 @@ function Dashboard() {
                             {original_url}
                           </a>
                         </div>
+
                         <div className='flex items-center gap-2 text-left text-xs text-muted-foreground'>
                           <span>الرابط:</span>
                           <a
@@ -425,8 +486,38 @@ function Dashboard() {
                             محاولات فاشلة: {totalAttempts - successAttempts}
                           </span>
                         </div>
+
                         <div className='flex items-center gap-2 text-xs text-muted-foreground'>
                           <span>تاريخ آخر تحديث: {lastActivity}</span>
+                        </div>
+
+                        <div className='flex w-full items-center gap-2 text-xs text-muted-foreground'>
+                          <span>الحالة:</span>
+                          {status === 'inactive' ? (
+                            <span className='text-red-500'>غير نشط</span>
+                          ) : (
+                            <span className='text-green-500'>نشط</span>
+                          )}
+
+                          <Button
+                            onClick={() =>
+                              handleToggleQuizStatus(
+                                id,
+                                status == 'active' ? 'deactivate' : 'activate',
+                              )
+                            }
+                            variant='ghost'
+                          >
+                            {status === 'inactive' ? (
+                              <span className='text-green-500'>
+                                تفعيل الاختبار
+                              </span>
+                            ) : (
+                              <span className='text-red-500'>
+                                تعطيل الاختبار
+                              </span>
+                            )}
+                          </Button>
                         </div>
                       </div>
                       <Button
