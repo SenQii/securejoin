@@ -175,7 +175,6 @@ function Dashboard() {
 
         const data = await res.json();
         if (res.ok) {
-          console.log('User quizzes:', data.quiz);
           setQuizzes(data.quiz);
         } else {
           console.error('Error fetching quizzes:', data);
