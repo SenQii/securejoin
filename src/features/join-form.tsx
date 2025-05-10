@@ -158,7 +158,7 @@ export function JoinForm({
       setSecureLink(finalURL);
       joinurlRef.current = finalURL;
     }
-  }, []);
+  }, [joinurlRef]);
 
   return (
     <Card>
