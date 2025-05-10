@@ -59,6 +59,8 @@ export function JoinForm({
   const [remainingAttempts, setRemainingAttempts] = useState<number | null>(
     null,
   );
+  const [isBanned, setIsBanned] = useState(false);
+  const [banHours, setBanHours] = useState<number | null>(null);
   const ip = useID();
 
   useEffect(() => {
@@ -69,8 +71,22 @@ export function JoinForm({
       }
     };
     checkRateLimit();
-    const interval = setInterval(checkRateLimit, 1000);
-    return () => clearInterval(interval);
+  }, [ip]);
+
+  useEffect(() => {
+    const checkBanStatus = () => {
+      if (ip) {
+        const banned = AttemptManager.isBanned(ip);
+        setIsBanned(banned);
+        if (banned) {
+          const banData = AttemptManager.getBanInfo(ip);
+          setBanHours(banData?.remainingHours || null);
+        } else {
+          setBanHours(null);
+        }
+      }
+    };
+    checkBanStatus();
   }, [ip]);
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -81,10 +97,8 @@ export function JoinForm({
       return;
     }
 
-    const isBanned = AttemptManager.isBanned(ip);
     if (isBanned) {
-      const banData = AttemptManager.getBanInfo(ip);
-      toast.error(`تم حظرك من النظام لمدة ${banData?.remainingHours} ساعة`);
+      toast.error(`تم حظرك من النظام لمدة ${banHours} ساعة`);
       return;
     }
 
@@ -154,20 +168,19 @@ export function JoinForm({
           {isLinkVerified && remainingAttempts !== null ? (
             <div
               className='mt-2 text-sm text-muted-foreground'
-              style={AttemptManager.isBanned(ip) ? { color: 'red' } : {}}
+              style={isBanned ? { color: 'red' } : {}}
             >
               عدد المحاولات المتبقية: {remainingAttempts}
             </div>
           ) : (
             'ادخل رابط الانضمام الآمن للانضمام للمجموعة'
           )}
-          {AttemptManager.isBanned(ip) && (
+          {isBanned && (
             <div
               className='mt-2 text-sm text-muted-foreground'
-              style={AttemptManager.isBanned(ip) ? { color: 'red' } : {}}
+              style={{ color: 'red' }}
             >
-              متبقي على نهاية الحظر{' '}
-              {AttemptManager.getBanInfo(ip)?.remainingHours} ساعة
+              متبقي على نهاية الحظر {banHours} ساعة
             </div>
           )}
         </CardDescription>

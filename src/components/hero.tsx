@@ -8,7 +8,7 @@ function Hero() {
         <Card className='aspect-square w-full max-w-64 rounded-xl bg-card backdrop-blur-sm'>
           <CardHeader className='items-center justify-center'>
             <div className='relative w-full'>
-              <h1 className='text-md text-center font-bold md:text-lg'>
+              <h1 className='text-center text-xl font-bold md:text-2xl'>
                 SecureJoin
               </h1>
               <img
@@ -19,7 +19,9 @@ function Hero() {
             </div>
           </CardHeader>
           <CardContent>
-            <p className='text-gray-500'>هل لديك سيكيورلينك؟ انضم الآن!</p>
+            <p className='text-gray-500'>
+              الحل الأمني الأمثل لمجموعات التواصل الاجتماعي
+            </p>
           </CardContent>
         </Card>
         <Card className='flex aspect-square w-full max-w-64 items-center justify-center rounded-xl bg-white bg-opacity-20 backdrop-blur-sm'>
